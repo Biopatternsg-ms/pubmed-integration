@@ -30,7 +30,7 @@ public class PubmedController {
             try {
                 buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useShortName(), buildPairsRequest.levels());
             } catch (Exception e) {
-                log.error("Error building mesh ontology tree", e);
+                log.error("Error building pubmed pairs", e);
             }
         }, executor);
 
