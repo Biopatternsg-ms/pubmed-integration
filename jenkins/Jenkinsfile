@@ -101,9 +101,6 @@ pipeline {
                             -e DB_PASSWORD='${MONGO_PASSWORD}' \\
                             -e DB_URL='${MONGO_DB_URL}' \\
                             -e DB_NAME='${PUBMED_INTEGRATION_DATABASE}' \\
-                            -e RABBIT_HOST='${RABBIT_HOST}' \\
-                            -e RABBIT_USER='${RABBIT_USER}' \\
-                            -e RABBIT_PASSWORD='${RABBIT_PASSWORD}' \\
                             --name ${CONTAINER_NAME} \\
                             -p ${PUBMED_INTEGRATION_PORT}:8080 \\
                             --network ${NETWORK} \\
