@@ -1,12 +1,12 @@
 package com.biopatternsg.application.usecase;
 
-public class GeneradorPares {
+public class PairsGenerator {
     // Clase personalizada para manejar el par [a, b] == [b, a]
-    static class Par {
+    static class TermsPair {
         String termino1;
         String termino2;
 
-        public Par(String t1, String t2) {
+        public TermsPair(String t1, String t2) {
             // Ordenar alfabéticamente garantiza que [a, b] y [b, a] generen el mismo objeto lógico
             if (t1.compareTo(t2) <= 0) {
                 this.termino1 = t1;
@@ -21,9 +21,9 @@ public class GeneradorPares {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Par par = (Par) o;
+            TermsPair termsPair = (TermsPair) o;
             // Solo comparamos los términos ya ordenados
-            return termino1.equals(par.termino1) && termino2.equals(par.termino2);
+            return termino1.equals(termsPair.termino1) && termino2.equals(termsPair.termino2);
         }
 
         @Override
