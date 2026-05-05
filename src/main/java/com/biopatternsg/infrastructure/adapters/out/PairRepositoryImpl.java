@@ -13,4 +13,9 @@ public class PairRepositoryImpl implements PairRepository, PanacheMongoRepositor
     public void save(PairsCollection pairsCollection) {
         persistOrUpdate(pairsCollection);
     }
+
+    @Override
+    public void deleteByPipelineId(String pipelineId) {
+        delete("pipelineId", pipelineId);
+    }
 }

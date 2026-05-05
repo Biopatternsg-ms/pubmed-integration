@@ -27,6 +27,8 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
     @Override
     public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels) {
 
+        pairRepository.deleteByPipelineId(pipelineId);
+
         Set<PairsGenerator.TermsPair> firstLevelPairs = processFirstLevel(pipelineId, useOnlyPrincipalName);
         savePairs(firstLevelPairs, pipelineId);
 
