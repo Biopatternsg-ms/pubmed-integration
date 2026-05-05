@@ -1,14 +1,11 @@
 package com.biopatternsg.infrastructure.adapters.in;
 
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
-import com.biopatternsg.domain.ports.in.DeletePairs;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +20,6 @@ import java.util.concurrent.Executor;
 public class PubmedController {
 
     private final BuildPubmedPairs buildPubmedPairs;
-    private final DeletePairs deletePairs;
     private final Executor executor;
 
     @POST
@@ -41,14 +37,6 @@ public class PubmedController {
         return Response.accepted()
                 .entity("{\"message\": \"Buildind pubmed pairs\"}")
                 .build();
-    }
-
-    @DELETE
-    @Path("/{pipelineId}")
-    public Response deleteByPipelineId(@PathParam("pipelineId") String pipelineId) {
-        log.info("Deleting pubmed pairs for pipelineId: {}", pipelineId);
-        deletePairs.execute(pipelineId);
-        return Response.noContent().build();
     }
 
 }
