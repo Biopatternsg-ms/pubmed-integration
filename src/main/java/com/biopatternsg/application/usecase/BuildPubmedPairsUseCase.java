@@ -2,6 +2,7 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.application.services.BiologicalObjectsService;
 import com.biopatternsg.domain.model.BiologicalObject;
+import com.biopatternsg.domain.model.Pair;
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.mongo.PairsCollection;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -22,17 +25,46 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
     private static final int SECOND_LEVEL = 2;
 
     @Override
-    public void execute(String pipelineId, boolean usePrincipalName, int levels) {
+    public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels) {
 
-        //Busqueda nivel 1
-        List<BiologicalObject> biologicalObjects = biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, FIRST_LEVEL);
-        Set<PairsGenerator.TermsPair> paresUnicos = getPars(usePrincipalName, biologicalObjects);
+        Set<PairsGenerator.TermsPair> firstLevelPairs = processFirstLevel(pipelineId, useOnlyPrincipalName);
+        savePairs(firstLevelPairs, pipelineId);
 
-        //Save
+        for (int currentLevel = SECOND_LEVEL; currentLevel <= levels; currentLevel++) {
+            processHigherLevel(pipelineId, useOnlyPrincipalName, currentLevel);
+        }
+
+        log.info("Generated unique pairs FINISHED");
+    }
+
+    private void processHigherLevel(String pipelineId, boolean useOnlyPrincipalName, int level) {
+        List<BiologicalObject> currentBiologicalObjects = biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, level);
+        log.info("-----------------------------------------");
+        log.info("Processing level [{}]: {} objects", level, currentBiologicalObjects.size());
+
+        currentBiologicalObjects.parallelStream().forEach(currentBiologicalObject -> {
+
+            List<BiologicalObject> biologicalObjectFamily = biologicalObjectsService.getBiologicalObjectFatherBrothersAndSons(pipelineId, currentBiologicalObject.id());
+
+            Set<PairsGenerator.TermsPair> uniquePairs = new HashSet<>();
+
+            biologicalObjectFamily.parallelStream().forEach(biologicalObject -> {
+                if (!biologicalObject.id().equals(currentBiologicalObject.id())) {
+                    uniquePairs.addAll(buildTermsBetweenObjects(useOnlyPrincipalName, currentBiologicalObject, biologicalObject));
+                }
+            });
+            
+            savePairs(uniquePairs, pipelineId);
+            log.info("---- LEVEL [{}] biologicalObject [{}]: {} pairs", level, currentBiologicalObject.id(), uniquePairs.size());
+        });
+    }
+
+    private void savePairs(Set<PairsGenerator.TermsPair> pairs, String pipelineId) {
+
         PairsCollection toSave = new PairsCollection();
         toSave.setPipelineId(pipelineId);
         toSave.setPairs(
-                paresUnicos.stream()
+                pairs.stream()
                 .map( p -> {
 
                     PairsCollection.Par par = new PairsCollection.Par();
@@ -40,133 +72,80 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
                     par.setSecondTerm(p.termino2);
 
                     return par;
-                }).toList());
+                }).collect(Collectors.toList()));
 
         pairRepository.save(toSave);
-
-        log.info("Generated unique pairs for first level: {}", paresUnicos.size());
-
-        //--------------------------------------------------------------------
-
-        for (int currentLevel = SECOND_LEVEL; currentLevel <= levels; currentLevel++) {
-            List<BiologicalObject> currentLevelBiologicalObjects = biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, currentLevel);
-            log.info("Biological objects level [{}]: {}", currentLevel, currentLevelBiologicalObjects.size());
-
-            currentLevelBiologicalObjects.forEach(currentBiologicalObject -> {
-                List<BiologicalObject> biologicalObjectFamily = biologicalObjectsService.getBiologicalObjectFatherBrothersAndSons(pipelineId, currentBiologicalObject.id());
-                Set<PairsGenerator.TermsPair> termsPairs = getPairsByLists(usePrincipalName, currentBiologicalObject, biologicalObjectFamily);
-
-                //Save
-                PairsCollection toSaveByLevel = new PairsCollection();
-                toSaveByLevel.setPipelineId(pipelineId);
-                toSaveByLevel.setPairs(
-                        termsPairs.stream()
-                                .map( p -> {
-
-                                    PairsCollection.Par par = new PairsCollection.Par();
-                                    par.setFirstTerm(p.termino1);
-                                    par.setSecondTerm(p.termino2);
-
-                                    return par;
-                                }).toList());
-
-                pairRepository.save(toSaveByLevel);
-
-                log.info("Generated unique pairs for biologicalObjectId [{}]: {}", currentBiologicalObject.id(), termsPairs.size());
-            });
-
-        }
-
-        log.info("Generated unique pairs FINISHED");
     }
 
-    private Set<PairsGenerator.TermsPair> getPars(boolean usePrincipalName, List<BiologicalObject> biologicalObjectFamily) {
-        List<List<String>> termListByObject = new ArrayList<>(biologicalObjectFamily.size());
+    private Set<PairsGenerator.TermsPair> processFirstLevel(String pipelineId, boolean useOnlyPrincipalName) {
+        List<BiologicalObject> biologicalObjects = biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, FIRST_LEVEL);
+        log.info("Biological objects level [{}]: {}", FIRST_LEVEL, biologicalObjects.size());
 
-        for (BiologicalObject biologicalObject : biologicalObjectFamily) {
-            if (usePrincipalName) {
-                biologicalObject.synonyms().clear();
-            }
-            List<String> currentObjectTerms = new ArrayList<>(biologicalObject.synonyms().size() + 2);
-            if (biologicalObject.name() != null) {
-                currentObjectTerms.add(biologicalObject.name());
-            }
-            if (biologicalObject.symbol() != null) {
-                currentObjectTerms.add(biologicalObject.symbol());
-            }
-            currentObjectTerms.addAll(biologicalObject.synonyms().stream().filter(Objects::nonNull).toList());
-            termListByObject.add(currentObjectTerms);
-        }
+        Map<String, BiologicalObject> biologicalObjectMap = biologicalObjects.stream()
+                .collect(Collectors.toMap(BiologicalObject::id, Function.identity()));
+
+        Set<Pair<String, String>> biologicalObjectIdPairs = getBiologicalObjectPairs(biologicalObjectMap.keySet().stream().toList());
 
         Set<PairsGenerator.TermsPair> uniquePairs = new HashSet<>();
 
-        // 3. GENERACIÓN DE PARES: Combinatoria entre objetos distintos
-        int biologicalObjectsSize = termListByObject.size();
+        biologicalObjectIdPairs.forEach(pair -> {
+            uniquePairs.addAll(buildTermsBetweenObjects(useOnlyPrincipalName, biologicalObjectMap.get(pair.first()), biologicalObjectMap.get(pair.second())));
+        });
 
-        // Bucle para el Objeto A
-        for (int i = 0; i < biologicalObjectsSize; i++) {
-            List<String> termsObjectA = termListByObject.get(i);
-
-            // Bucle para el Objeto B (empieza en i + 1 para pares 0-1, 0-2, 1-2, etc.)
-            for (int j = i + 1; j < biologicalObjectsSize; j++) {
-                List<String> termsObjectB = termListByObject.get(j);
-
-                // Producto cartesiano entre los términos del Objeto A y Objeto B
-                for (String termA : termsObjectA) {
-                    for (String termB : termsObjectB) {
-                        if (termA == null || termB == null) {
-                            continue;
-                        }
-                        uniquePairs.add(new PairsGenerator.TermsPair(termA, termB));
-                    }
-                }
-            }
-        }
-
-        int termsSize = termListByObject.stream().filter(Objects::nonNull).mapToInt(List::size).sum();
-
-        log.info("Number of objects [{}], number of terms [{}],unique pairs [{}]", biologicalObjectsSize, termsSize,uniquePairs.size());
+        log.info("Generated unique pairs for first level: {}", uniquePairs.size());
 
         return uniquePairs;
     }
 
-    private List<String> getTerms(BiologicalObject biologicalObject, boolean useShortName) {
+    private Set<PairsGenerator.TermsPair> buildTermsBetweenObjects(boolean useOnlyPrincipalName, BiologicalObject biologicalObjectA, BiologicalObject biologicalObjectB) {
 
-        if (useShortName) {
-            biologicalObject.synonyms().clear();
-        }
-        List<String> currentObjectTerms = new ArrayList<>();
-        if (biologicalObject.name() != null) {
-            currentObjectTerms.add(biologicalObject.name());
-        }
-        if (biologicalObject.symbol() != null) {
-            currentObjectTerms.add(biologicalObject.symbol());
-        }
-        currentObjectTerms.addAll(biologicalObject.synonyms().stream().filter(Objects::nonNull).toList());
+        List<String> objectATerms = getTerms(biologicalObjectA, useOnlyPrincipalName);
+        List<String> objectBTerms = getTerms(biologicalObjectB, useOnlyPrincipalName);
 
-        return currentObjectTerms;
-    }
+        Set<PairsGenerator.TermsPair> resultado = new HashSet<>();
 
-    private Set<PairsGenerator.TermsPair> getPairsByLists(boolean useShortName, BiologicalObject currentBiologicalObject, List<BiologicalObject> biologicalObjectFamily){
-
-        List<String> biologicalObjectTerms = getTerms(currentBiologicalObject, useShortName);
-
-        List<String> biologicalObjectFamilyTerms = biologicalObjectFamily.stream()
-                .map(bo -> getTerms(bo, useShortName))
-                .flatMap(List::stream).toList();
-
-
-        Set<PairsGenerator.TermsPair> paresUnicos = new HashSet<>();
-
-        for (String s1 : biologicalObjectTerms) {
-            for (String s2 : biologicalObjectFamilyTerms) {
-                if (s1 == null || s2 == null) {
-                    continue;
+        for (String termA : objectATerms) {
+            for (String termB : objectBTerms) {
+                if (!termA.equalsIgnoreCase(termB)) {
+                    resultado.add(new PairsGenerator.TermsPair(termA, termB));
                 }
-                paresUnicos.add(new PairsGenerator.TermsPair(s1, s2));
             }
         }
 
-        return paresUnicos;
+        return resultado;
+    }
+    
+    private List<String> getTerms(BiologicalObject biologicalObject, boolean useOnlyPrincipalName) {
+
+        List<String> terms = new ArrayList<>();
+        Optional.ofNullable(biologicalObject.name()).ifPresent(terms::add);
+        Optional.ofNullable(biologicalObject.symbol()).ifPresent(terms::add);
+
+        if (!useOnlyPrincipalName && biologicalObject.synonyms() != null) {
+            biologicalObject.synonyms().stream().filter(Objects::nonNull).forEach(terms::add);
+        }
+
+        return terms;
+    }
+
+    private Set<Pair<String, String>> getBiologicalObjectPairs(List<String> biologicalObjectIds) {
+
+        Set<Pair<String, String>> biologicalObjectIdPairs = new HashSet<>();
+
+        for (int i = 0; i < biologicalObjectIds.size(); i++) {
+            for (int j = i + 1;  j < biologicalObjectIds.size(); j++) {
+                biologicalObjectIdPairs.add(getOrderedPair(biologicalObjectIds.get(i), biologicalObjectIds.get(j)));
+            }
+        }
+
+        return biologicalObjectIdPairs;
+    }
+
+    private Pair<String, String> getOrderedPair(String firstTerm, String secondTerm) {
+        if (firstTerm.compareTo(secondTerm) <= 0) {
+            return new Pair<>(firstTerm, secondTerm);
+        } else {
+            return new Pair<>(secondTerm, firstTerm);
+        }
     }
 }

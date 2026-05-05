@@ -28,7 +28,7 @@ public class PubmedController {
 
         CompletableFuture.runAsync(() -> {
             try {
-                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useShortName(), buildPairsRequest.levels());
+                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels());
             } catch (Exception e) {
                 log.error("Error building pubmed pairs", e);
             }
