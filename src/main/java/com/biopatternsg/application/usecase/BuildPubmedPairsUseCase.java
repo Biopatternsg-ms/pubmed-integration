@@ -69,11 +69,11 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
                 pairs.stream()
                 .map( p -> {
 
-                    PairsCollection.Par par = new PairsCollection.Par();
-                    par.setFirstTerm(p.termino1);
-                    par.setSecondTerm(p.termino2);
+                    PairsCollection.Pair pair = new PairsCollection.Pair();
+                    pair.setFirstTerm(p.first);
+                    pair.setSecondTerm(p.second);
 
-                    return par;
+                    return pair;
                 }).collect(Collectors.toList()));
 
         pairRepository.save(toSave);

@@ -12,11 +12,11 @@ import java.util.List;
 @MongoEntity(collection = "pairs")
 public class PairsCollection extends PanacheMongoEntity {
     private String pipelineId;
-    private List<Par> pairs;
+    private List<Pair> pairs;
 
     @Setter
     @Getter
-    public static class Par {
+    public static class Pair {
         private String firstTerm;
         private String secondTerm;
     }
