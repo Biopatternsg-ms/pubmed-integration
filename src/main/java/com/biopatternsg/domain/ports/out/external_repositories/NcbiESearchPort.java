@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.domain.ports.out.external_repositories;
 
-import com.biopatternsg.mongo.PairsCollection;
+import com.biopatternsg.domain.model.NcbiSearchResult;
 
-import java.util.List;
-
-public interface PairRepository {
-    void save(PairsCollection pairsCollection);
-    void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+public interface NcbiESearchPort {
+    NcbiSearchResult search(String term, int retmax);
 }

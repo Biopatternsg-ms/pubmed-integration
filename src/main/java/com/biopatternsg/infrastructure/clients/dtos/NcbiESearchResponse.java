@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.clients.dtos;
 
-import com.biopatternsg.mongo.PairsCollection;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
-public interface PairRepository {
-    void save(PairsCollection pairsCollection);
-    void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+/**
+ * DTO raíz de la respuesta JSON de NCBI ESearch.
+ * Ejemplo: { "esearchresult": { "count": "5", "idlist": ["123","456"] } }
+ */
+@Getter
+@Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class NcbiESearchResponse {
+    private NcbiESearchResultDto esearchresult;
 }

@@ -16,7 +16,9 @@
 package com.biopatternsg.infrastructure.adapters.in;
 
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
+import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.POST;
@@ -35,6 +37,7 @@ import java.util.concurrent.Executor;
 public class PubmedController {
 
     private final BuildPubmedPairs buildPubmedPairs;
+    private final SearchPubmedByPairs searchPubmedByPairs;
     private final Executor executor;
 
     @POST
@@ -51,6 +54,23 @@ public class PubmedController {
 
         return Response.accepted()
                 .entity("{\"message\": \"Buildind pubmed pairs\"}")
+                .build();
+    }
+
+    @POST
+    @Path("/search-pairs")
+    public Response searchPairs(@Valid SearchPairsByPipelineRequest request) {
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                searchPubmedByPairs.execute(request.pipelineId(), request.retmax());
+            } catch (Exception e) {
+                log.error("Error searching pubmed pairs", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity("{\"message\": \"Searching pubmed pairs\"}")
                 .build();
     }
 

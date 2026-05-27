@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
-import com.biopatternsg.mongo.PairsCollection;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
-import java.util.List;
-
-public interface PairRepository {
-    void save(PairsCollection pairsCollection);
-    void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+public record SearchPairsByPipelineRequest(
+        @NotBlank String pipelineId,
+        @Min(1) int retmax
+) {
 }

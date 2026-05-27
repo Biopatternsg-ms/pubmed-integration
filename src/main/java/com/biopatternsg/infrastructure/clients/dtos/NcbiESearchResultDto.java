@@ -13,14 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.clients.dtos;
 
-import com.biopatternsg.mongo.PairsCollection;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
-public interface PairRepository {
-    void save(PairsCollection pairsCollection);
-    void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+/**
+ * DTO interno del objeto "esearchresult" del JSON de NCBI ESearch.
+ * El campo "count" viene como String en la API de NCBI.
+ */
+@Getter
+@Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class NcbiESearchResultDto {
+
+    private String count;
+
+    @JsonProperty("idlist")
+    private List<String> idList;
 }

@@ -21,6 +21,8 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 @ApplicationScoped
 @RequiredArgsConstructor
 public class PairRepositoryImpl implements PairRepository, PanacheMongoRepository<PairsCollection> {
@@ -32,5 +34,10 @@ public class PairRepositoryImpl implements PairRepository, PanacheMongoRepositor
     @Override
     public void deleteByPipelineId(String pipelineId) {
         delete("pipelineId", pipelineId);
+    }
+
+    @Override
+    public List<PairsCollection> findByPipelineId(String pipelineId) {
+        return list("pipelineId", pipelineId);
     }
 }

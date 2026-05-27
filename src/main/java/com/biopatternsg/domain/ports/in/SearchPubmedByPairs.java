@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.domain.ports.in;
 
-import com.biopatternsg.mongo.PairsCollection;
-
-import java.util.List;
-
-public interface PairRepository {
-    void save(PairsCollection pairsCollection);
-    void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+public interface SearchPubmedByPairs {
+    void execute(String pipelineId, int retmax);
 }
