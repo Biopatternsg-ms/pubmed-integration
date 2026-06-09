@@ -58,7 +58,7 @@ public class PubmedController {
     }
 
     @POST
-    @Path("/search-pairs")
+    @Path("/search-pubmed-ids-by-pairs")
     public Response searchPairs(@Valid SearchPairsByPipelineRequest request) {
 
         CompletableFuture.runAsync(() -> {
@@ -70,7 +70,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Searching pubmed pairs\"}")
+                .entity("{\"message\": \"Searching pubmed IDS by pairs\"}")
                 .build();
     }
 

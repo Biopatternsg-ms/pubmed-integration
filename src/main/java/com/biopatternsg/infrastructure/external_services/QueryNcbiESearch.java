@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.clients.dtos;
+package com.biopatternsg.infrastructure.external_services;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
+import com.biopatternsg.domain.model.NcbiSearchResult;
 
-@Getter
-@Setter
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class NcbiESearchResponse {
-    @JsonProperty("esearchresult")
-    private NcbiESearchResultDto eSearchResult;
+public interface QueryNcbiESearch {
+    NcbiSearchResult search(String term, int retmax);
 }

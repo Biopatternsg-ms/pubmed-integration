@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.adapters.out;
+package com.biopatternsg.infrastructure.external_services.impl;
 
 import com.biopatternsg.domain.model.NcbiSearchResult;
-import com.biopatternsg.domain.ports.out.external_repositories.NcbiESearchPort;
-import com.biopatternsg.infrastructure.clients.NcbiESearchClient;
+import com.biopatternsg.infrastructure.clients.external.NcbiESearchClient;
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResponse;
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResultDto;
+import com.biopatternsg.infrastructure.external_services.QueryNcbiESearch;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -32,30 +31,34 @@ import java.util.Optional;
 
 @Slf4j
 @ApplicationScoped
-public class NcbiESearchAdapter implements NcbiESearchPort {
+public class QueryNcbiESearchImpl implements QueryNcbiESearch {
 
-    @Inject
-    @RestClient
-    NcbiESearchClient ncbiESearchClient;
+    private final NcbiESearchClient ncbiESearchClient;
+    private final String tool;
+    private final String email;
+    private final String apiKey;
 
-    @Inject
-    @ConfigProperty(name = "ncbi.esearch.tool", defaultValue = "pubmed-integration")
-    String tool;
-
-    @Inject
-    @ConfigProperty(name = "ncbi.esearch.email", defaultValue = "biopatternsg@gmail.com")
-    String email;
+    public QueryNcbiESearchImpl(
+            @RestClient NcbiESearchClient ncbiESearchClient,
+            @ConfigProperty(name = "ncbi.esearch.tool") String tool,
+            @ConfigProperty(name = "ncbi.esearch.email") String email,
+            @ConfigProperty(name = "ncbi.esearch.api-key") String apiKey) {
+        this.ncbiESearchClient = ncbiESearchClient;
+        this.tool = tool;
+        this.email = email;
+        this.apiKey = apiKey;
+    }
 
     @Override
     public NcbiSearchResult search(String term, int retmax) {
-        var response = ncbiESearchClient.search("pubmed", term, retmax, "json", tool, email);
+        String apiKeyParam = (apiKey == null || apiKey.trim().isEmpty()) ? null : apiKey.trim();
+        NcbiESearchResponse response = ncbiESearchClient.search("pubmed", term, retmax, "json", tool, email, "relevance", apiKeyParam);
 
         NcbiESearchResultDto result = Optional.ofNullable(response)
-                .map(NcbiESearchResponse::getEsearchresult)
+                .map(NcbiESearchResponse::getESearchResult)
                 .orElse(null);
 
         if (result == null) {
-            log.warn("Empty response from NCBI for term=[{}]", term);
             return new NcbiSearchResult(term, 0, Collections.emptyList());
         }
 
@@ -69,7 +72,6 @@ public class NcbiESearchAdapter implements NcbiESearchPort {
         try {
             return count != null ? Integer.parseInt(count.trim()) : 0;
         } catch (NumberFormatException e) {
-            log.warn("Could not parse NCBI count value: [{}]", count);
             return 0;
         }
     }

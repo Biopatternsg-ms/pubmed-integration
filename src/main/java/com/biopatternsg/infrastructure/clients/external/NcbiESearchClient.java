@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.clients;
+package com.biopatternsg.infrastructure.clients.external;
 
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResponse;
 import jakarta.ws.rs.GET;
@@ -32,6 +32,8 @@ public interface NcbiESearchClient {
             @QueryParam("retmax") int retmax,
             @QueryParam("retmode") String retmode,
             @QueryParam("tool") String tool,
-            @QueryParam("email") String email
+            @QueryParam("email") String email,
+            @QueryParam("sort") String sort,
+            @QueryParam("api_key") String apiKey
     );
 }

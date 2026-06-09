@@ -15,9 +15,9 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.NcbiSearchResult;
+import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
-import com.biopatternsg.domain.ports.out.external_repositories.NcbiESearchPort;
+import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.mongo.PairsCollection;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -34,47 +33,42 @@ import java.util.stream.Collectors;
 public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
 
     private final PairRepository pairRepository;
-    private final NcbiESearchPort ncbiESearchPort;
-
-    private static final long DELAY_MS = 1000L;
+    private final NcbiQueueSender ncbiQueueSender;
 
     @Override
     public void execute(String pipelineId, int retmax) {
-        log.info("Starting NCBI ESearch for pipelineId=[{}] retmax=[{}]", pipelineId, retmax);
+        log.info("Starting NCBI ESearch enqueuing for pipelineId=[{}] retmax=[{}]", pipelineId, retmax);
 
         List<PairsCollection> collections = pairRepository.findByPipelineId(pipelineId);
-        log.info("Found [{}] PairsCollection documents for pipelineId=[{}]", collections.size(), pipelineId);
 
         List<PairsCollection.Pair> allPairs = collections.stream()
                 .filter(c -> c.getPairs() != null)
                 .flatMap(c -> c.getPairs().stream())
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
-        log.info("Total pairs to query in NCBI: [{}]", allPairs.size());
+        log.info("Found [{}] PairsCollection documents for pipelineId=[{}]", allPairs.size(), pipelineId);
 
-        for (int i = 0; i < allPairs.size(); i++) {
-            PairsCollection.Pair pair = allPairs.get(i);
-            String term = pair.getFirstTerm() + " AND " + pair.getSecondTerm();
+        List<String> terms = allPairs.stream()
+                .map(pair -> pair.getFirstTerm() + " AND " + pair.getSecondTerm())
+                .toList();
 
+        //TODO: quitar esto luego de las pruebas
+        List<String> testTerms = terms.stream()
+                .limit(100)
+                .toList();
+
+        log.info("Total pairs to enqueue for NCBI: [{}]", testTerms.size());
+
+        for (int i = 0; i < testTerms.size(); i++) {
+            String term = testTerms.get(i);
             try {
-                NcbiSearchResult result = ncbiESearchPort.search(term, retmax);
-                log.info("[{}/{}] term=[{}] count=[{}] ids={}", i + 1, allPairs.size(), term, result.count(), result.ids());
+                ncbiQueueSender.send(new NcbiSearchRequest(pipelineId, term, retmax, i + 1, testTerms.size()));
             } catch (Exception e) {
-                log.error("[{}/{}] Error querying NCBI for term=[{}]: {}", i + 1, allPairs.size(), term, e.getMessage());
-            }
-
-            if (i < allPairs.size() - 1) {
-                try {
-                    Thread.sleep(DELAY_MS);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted while waiting between NCBI queries");
-                    break;
-                }
+                log.error("[{}/{}] Error enqueuing NCBI request for term=[{}]: {}", i + 1, allPairs.size(), term, e.getMessage());
             }
         }
 
-        log.info("NCBI ESearch FINISHED for pipelineId=[{}]", pipelineId);
+        log.info("NCBI ESearch enqueuing FINISHED for pipelineId=[{}]", pipelineId);
     }
 }
