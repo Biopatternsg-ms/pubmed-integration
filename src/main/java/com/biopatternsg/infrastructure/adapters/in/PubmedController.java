@@ -20,13 +20,15 @@ import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import com.biopatternsg.infrastructure.session.SessionUtils;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -40,6 +42,7 @@ public class PubmedController {
     private final BuildPubmedPairs buildPubmedPairs;
     private final SearchPubmedByPairs searchPubmedByPairs;
     private final Executor executor;
+    private final SessionUtils sessionUtils;
 
     @POST
     @Path("/build-pairs")
@@ -60,11 +63,12 @@ public class PubmedController {
 
     @POST
     @Path("/search-pubmed-ids-by-pairs")
+    @ActivateRequestContext
     public Response searchPairs(
-            @Valid SearchPairsByPipelineRequest request,
-            @HeaderParam("x-user-id") String userId
+            @Valid SearchPairsByPipelineRequest request
     ) {
 
+        String userId = sessionUtils.getUserId();
         CompletableFuture.runAsync(() -> {
             try {
                 searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);

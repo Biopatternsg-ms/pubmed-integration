@@ -59,17 +59,12 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
                 .map(pair -> pair.getFirstTerm() + " AND " + pair.getSecondTerm())
                 .toList();
 
-        //TODO: quitar esto luego de las pruebas
-        List<String> testTerms = terms.stream()
-                .limit(100)
-                .toList();
+        log.info("Total pairs to enqueue for NCBI: [{}]", terms.size());
 
-        log.info("Total pairs to enqueue for NCBI: [{}]", testTerms.size());
-
-        for (int i = 0; i < testTerms.size(); i++) {
-            String term = testTerms.get(i);
+        for (int i = 0; i < terms.size(); i++) {
+            String term = terms.get(i);
             try {
-                ncbiQueueSender.send(new NcbiSearchRequest(pipelineId, term, retmax, i + 1, testTerms.size()));
+                ncbiQueueSender.send(new NcbiSearchRequest(pipelineId, term, retmax, i + 1, terms.size(), userId));
             } catch (Exception e) {
                 log.error("[{}/{}] Error enqueuing NCBI request for term=[{}]: {}", i + 1, allPairs.size(), term, e.getMessage());
             }

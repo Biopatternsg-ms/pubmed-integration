@@ -20,6 +20,7 @@ public record NcbiSearchRequest(
         String term,
         int retmax,
         int termIndex,
-        int termsTotal
+        int termsTotal,
+        String userId
 ) {
 }

@@ -62,8 +62,7 @@ public class NcbiQueueConsumerRabbitImpl {
                 pairRepository.deleteByPipelineId(request.pipelineId());
                 log.info("Successfully deleted processed pairs for pipelineId=[{}] from database", request.pipelineId());
 
-                //TODO: Mover el userId al contexto
-                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, "48d4d0fe-321b-4bb0-9353-0c569b0987a6");
+                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId());
             }
 
             try {
