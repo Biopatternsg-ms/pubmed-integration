@@ -17,8 +17,10 @@ package com.biopatternsg.infrastructure.adapters.in.consumers;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.model.NcbiSearchResult;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.external_repositories.NcbiSearchRepoWeb;
-import com.biopatternsg.infrastructure.external_services.QueryNcbiESearch;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import io.smallrye.common.annotation.Blocking;
@@ -36,6 +38,7 @@ public class NcbiQueueConsumerRabbitImpl {
     private final NcbiSearchRepoWeb ncbiSearchRepoWeb;
     private final PubmedResultRepository pubmedResultRepository;
     private final PairRepository pairRepository;
+    private final ConfigAndControlRepository configAndControlRepository;
 
     private static final long DELAY_MS = 101L;
 
@@ -58,6 +61,9 @@ public class NcbiQueueConsumerRabbitImpl {
             if (request.termIndex() == request.termsTotal()) {
                 pairRepository.deleteByPipelineId(request.pipelineId());
                 log.info("Successfully deleted processed pairs for pipelineId=[{}] from database", request.pipelineId());
+
+                //TODO: Mover el userId al contexto
+                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, "48d4d0fe-321b-4bb0-9353-0c569b0987a6");
             }
 
             try {

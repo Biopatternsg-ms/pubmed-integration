@@ -16,7 +16,10 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.mongo.PairsCollection;
@@ -34,10 +37,13 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
 
     private final PairRepository pairRepository;
     private final NcbiQueueSender ncbiQueueSender;
+    private final ConfigAndControlRepository configAndControlRepository;
 
     @Override
-    public void execute(String pipelineId, int retmax) {
+    public void execute(String pipelineId, int retmax, String userId) {
         log.info("Starting NCBI ESearch enqueuing for pipelineId=[{}] retmax=[{}]", pipelineId, retmax);
+
+        configAndControlRepository.updateStep(pipelineId, PipelineSteps.SEARCH_PUBMED_IDS, Status.IN_PROGRESS, userId);
 
         List<PairsCollection> collections = pairRepository.findByPipelineId(pipelineId);
 

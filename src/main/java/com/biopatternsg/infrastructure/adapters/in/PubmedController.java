@@ -21,6 +21,7 @@ import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
@@ -59,11 +60,14 @@ public class PubmedController {
 
     @POST
     @Path("/search-pubmed-ids-by-pairs")
-    public Response searchPairs(@Valid SearchPairsByPipelineRequest request) {
+    public Response searchPairs(
+            @Valid SearchPairsByPipelineRequest request,
+            @HeaderParam("x-user-id") String userId
+    ) {
 
         CompletableFuture.runAsync(() -> {
             try {
-                searchPubmedByPairs.execute(request.pipelineId(), request.retmax());
+                searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);
             } catch (Exception e) {
                 log.error("Error searching pubmed pairs", e);
             }

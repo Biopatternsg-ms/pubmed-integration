@@ -13,8 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.infrastructure.clients.internal;
 
-public interface SearchPubmedByPairs {
-    void execute(String pipelineId, int retmax, String userId);
+import com.biopatternsg.infrastructure.adapters.dtos.PipelineStepRequest;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.Path;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+@RegisterRestClient(configKey = "config-and-control-api")
+public interface ConfigAndControlHttpClient {
+
+    @PATCH
+    @Path("config-and-control/pipelines/update-step")
+    void updateStep(PipelineStepRequest stepRequest, @HeaderParam("x-user-id") String userId);
 }
