@@ -83,7 +83,12 @@ pipeline {
                         credentialsId: '06a41492-8765-49c4-91f6-b759260140f0',
                         usernameVariable: 'MONGO_USER',
                         passwordVariable: 'MONGO_PASSWORD'
-                    )
+                    ),
+                    usernamePassword(
+                        credentialsId: 'rabbit-credentials',
+                        usernameVariable: 'RABBIT_USER',
+                        passwordVariable: 'RABBIT_PASSWORD'
+                    ),
                 ]) {
                     script {
                         def imageName = "${CONTAINER_NAME}:latest"
