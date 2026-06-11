@@ -106,6 +106,8 @@ pipeline {
                             -e DB_PASSWORD='${MONGO_PASSWORD}' \\
                             -e DB_URL='${MONGO_DB_URL}' \\
                             -e DB_NAME='${PUBMED_INTEGRATION_DATABASE}' \\
+                            -e NCBI_EMAIL='${NCBI_EMAIL}' \\
+                            -e NCBI_API_KEY='${NCBI_API_KEY}' \\
                             --name ${CONTAINER_NAME} \\
                             -p ${PUBMED_INTEGRATION_PORT}:8080 \\
                             --network ${NETWORK} \\
