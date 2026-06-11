@@ -18,7 +18,10 @@ package com.biopatternsg.application.usecase;
 import com.biopatternsg.application.services.BiologicalObjectsService;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.model.Pair;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.mongo.PairsCollection;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,11 +39,12 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
 
     private final BiologicalObjectsService biologicalObjectsService;
     private final PairRepository pairRepository;
+    private final ConfigAndControlRepository configAndControlRepository;
     private static final int FIRST_LEVEL = 1;
     private static final int SECOND_LEVEL = 2;
 
     @Override
-    public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels) {
+    public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels, String userId) {
 
         pairRepository.deleteByPipelineId(pipelineId);
 
@@ -52,6 +56,8 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
         }
 
         log.info("Generated unique pairs FINISHED");
+
+        configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId);
     }
 
     private void processHigherLevel(String pipelineId, boolean useOnlyPrincipalName, int level) {

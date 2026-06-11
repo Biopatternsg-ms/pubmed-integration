@@ -46,11 +46,13 @@ public class PubmedController {
 
     @POST
     @Path("/build-pairs")
+    @ActivateRequestContext
     public Response buildTreeMesh(@Valid BuildPairsRequest buildPairsRequest) {
 
+        String userId = sessionUtils.getUserId();
         CompletableFuture.runAsync(() -> {
             try {
-                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels());
+                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId);
             } catch (Exception e) {
                 log.error("Error building pubmed pairs", e);
             }
