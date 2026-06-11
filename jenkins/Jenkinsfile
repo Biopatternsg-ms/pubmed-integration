@@ -108,6 +108,9 @@ pipeline {
                             -e DB_NAME='${PUBMED_INTEGRATION_DATABASE}' \\
                             -e NCBI_EMAIL='${NCBI_EMAIL}' \\
                             -e NCBI_API_KEY='${NCBI_API_KEY}' \\
+                            -e RABBIT_HOST='${RABBIT_HOST}' \\
+                            -e RABBIT_USER='${RABBIT_USER}' \\
+                            -e RABBIT_PASSWORD='${RABBIT_PASSWORD}' \\
                             --name ${CONTAINER_NAME} \\
                             -p ${PUBMED_INTEGRATION_PORT}:8080 \\
                             --network ${NETWORK} \\
