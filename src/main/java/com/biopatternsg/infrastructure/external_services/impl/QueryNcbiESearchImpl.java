@@ -20,6 +20,7 @@ import com.biopatternsg.infrastructure.clients.external.NcbiESearchClient;
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResponse;
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResultDto;
 import com.biopatternsg.infrastructure.external_services.QueryNcbiESearch;
+import com.biopatternsg.infrastructure.util.SimpleRateLimiter;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -37,6 +38,7 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
     private final String tool;
     private final String email;
     private final String apiKey;
+    private final SimpleRateLimiter rateLimiter;
 
     public QueryNcbiESearchImpl(
             @RestClient NcbiESearchClient ncbiESearchClient,
@@ -47,10 +49,17 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
         this.tool = tool;
         this.email = email;
         this.apiKey = apiKey;
+        boolean hasValidKey = apiKey != null && !apiKey.trim().isEmpty()
+                && !apiKey.equalsIgnoreCase("none")
+                && !apiKey.equalsIgnoreCase("null")
+                && !apiKey.contains("${");
+        double permitsPerSecond = hasValidKey ? 8.0 : 2.0;
+        this.rateLimiter = new SimpleRateLimiter(permitsPerSecond);
     }
 
     @Override
     public NcbiSearchResult search(String term, int retmax) {
+        rateLimiter.acquire();
         String apiKeyParam = (apiKey == null || apiKey.trim().isEmpty()) ? null : apiKey.trim();
         NcbiESearchResponse response = ncbiESearchClient.search("pubmed", term, retmax, "json", tool, email, "relevance", apiKeyParam);
 

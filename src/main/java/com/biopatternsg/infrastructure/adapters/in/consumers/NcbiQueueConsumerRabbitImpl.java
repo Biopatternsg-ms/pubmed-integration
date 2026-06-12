@@ -23,7 +23,9 @@ import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlR
 import com.biopatternsg.domain.ports.out.external_repositories.NcbiSearchRepoWeb;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
-import io.smallrye.common.annotation.Blocking;
+import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
+import com.biopatternsg.mongo.SearchProgressCollection;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +41,10 @@ public class NcbiQueueConsumerRabbitImpl {
     private final PubmedResultRepository pubmedResultRepository;
     private final PairRepository pairRepository;
     private final ConfigAndControlRepository configAndControlRepository;
-
-    private static final long DELAY_MS = 101L;
+    private final SearchProgressRepository searchProgressRepository;
 
     @Incoming("ncbi-in")
-    @Blocking
+    @Blocking(ordered = false)
     public void consume(JsonObject jsonMsg) {
         NcbiSearchRequest request = jsonMsg.mapTo(NcbiSearchRequest.class);
 
@@ -57,19 +58,13 @@ public class NcbiQueueConsumerRabbitImpl {
         } catch (Exception e) {
             log.error("Error executing NCBI search for term=[{}]: {}", request.term(), e.getMessage(), e);
         } finally {
-
-            if (request.termIndex() == request.termsTotal()) {
+            SearchProgressCollection progress = searchProgressRepository.incrementAndGet(request.pipelineId());
+            if (progress != null && progress.getCompletedCount() == progress.getTotalCount()) {
                 pairRepository.deleteByPipelineId(request.pipelineId());
-                log.info("Successfully deleted processed pairs for pipelineId=[{}] from database", request.pipelineId());
+                log.info("Successfully deleted processed pairs for pipelineId=[{}] from database (all [{}] terms processed)", request.pipelineId(), progress.getTotalCount());
 
                 configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId());
-            }
-
-            try {
-                Thread.sleep(DELAY_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("Consumer rate limiting sleep interrupted", e);
+                searchProgressRepository.deleteByPipelineId(request.pipelineId());
             }
         }
     }

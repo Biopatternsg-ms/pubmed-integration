@@ -16,24 +16,27 @@
 package com.biopatternsg.infrastructure.clients.external;
 
 import com.biopatternsg.infrastructure.clients.dtos.NcbiESearchResponse;
-import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @RegisterRestClient(configKey = "ncbi-esearch-api")
 public interface NcbiESearchClient {
 
-    @GET
+    @POST
     @Path("/esearch.fcgi")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     NcbiESearchResponse search(
-            @QueryParam("db") String db,
-            @QueryParam("term") String term,
-            @QueryParam("retmax") int retmax,
-            @QueryParam("retmode") String retmode,
-            @QueryParam("tool") String tool,
-            @QueryParam("email") String email,
-            @QueryParam("sort") String sort,
-            @QueryParam("api_key") String apiKey
+            @FormParam("db") String db,
+            @FormParam("term") String term,
+            @FormParam("retmax") int retmax,
+            @FormParam("retmode") String retmode,
+            @FormParam("tool") String tool,
+            @FormParam("email") String email,
+            @FormParam("sort") String sort,
+            @FormParam("api_key") String apiKey
     );
 }

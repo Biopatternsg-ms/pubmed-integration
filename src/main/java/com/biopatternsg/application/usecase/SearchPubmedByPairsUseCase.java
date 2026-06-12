@@ -16,12 +16,10 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
-import com.biopatternsg.domain.model.PipelineSteps;
-import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
-import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
+import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
 import com.biopatternsg.mongo.PairsCollection;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +35,7 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
 
     private final PairRepository pairRepository;
     private final NcbiQueueSender ncbiQueueSender;
+    private final SearchProgressRepository searchProgressRepository;
 
     @Override
     public void execute(String pipelineId, int retmax, String userId) {
@@ -57,6 +56,9 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
                 .toList();
 
         log.info("Total pairs to enqueue for NCBI: [{}]", terms.size());
+
+        // Initialize progress in MongoDB
+        searchProgressRepository.initializeProgress(pipelineId, terms.size(), userId);
 
         for (int i = 0; i < terms.size(); i++) {
             String term = terms.get(i);
