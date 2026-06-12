@@ -23,11 +23,21 @@ public class SimpleRateLimiter {
         this.intervalNanos = (long) (1_000_000_000.0 / permitsPerSecond);
     }
 
-    public synchronized void acquire() {
-        long now = System.nanoTime();
-        long nextAllowedTime = lastRequestNanos + intervalNanos;
-        if (now < nextAllowedTime) {
-            long sleepNanos = nextAllowedTime - now;
+    public void acquire() {
+        long sleepNanos = 0;
+
+        synchronized (this) {
+            long now = System.nanoTime();
+            long nextAllowedTime = lastRequestNanos + intervalNanos;
+            if (now < nextAllowedTime) {
+                sleepNanos = nextAllowedTime - now;
+                lastRequestNanos = nextAllowedTime;
+            } else {
+                lastRequestNanos = now;
+            }
+        }
+
+        if (sleepNanos > 0) {
             long sleepMs = sleepNanos / 1_000_000;
             int sleepNs = (int) (sleepNanos % 1_000_000);
             try {
@@ -35,9 +45,6 @@ public class SimpleRateLimiter {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            lastRequestNanos = nextAllowedTime;
-        } else {
-            lastRequestNanos = now;
         }
     }
 }
