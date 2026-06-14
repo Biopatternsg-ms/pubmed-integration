@@ -17,12 +17,9 @@ package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.mongo.PubmedResultCollection;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.Indexes;
+import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
-import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -38,7 +35,7 @@ public class PubmedResultRepositoryImpl implements PubmedResultRepository, Panac
             persist(doc);
         } catch (Exception e) {
             if (e.getMessage() == null || !e.getMessage().contains("E11000")) {
-                throw e;
+                throw new InternalServerError(e);
             }
         }
     }

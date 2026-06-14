@@ -18,6 +18,7 @@ package com.biopatternsg.infrastructure.adapters.out.producers;
 import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import jakarta.enterprise.context.ApplicationScoped;
+import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -39,7 +40,7 @@ public class NcbiQueueSenderRabbitImpl implements NcbiQueueSender {
             emitter.send(request);
         } catch (Exception e) {
             log.error("Failed to send message to RabbitMQ: term=[{}]", request.term(), e);
-            throw e;
+            throw new InternalServerError(e);
         }
     }
 }
