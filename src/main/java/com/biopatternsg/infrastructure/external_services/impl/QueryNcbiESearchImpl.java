@@ -44,7 +44,9 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
             @RestClient NcbiESearchClient ncbiESearchClient,
             @ConfigProperty(name = "ncbi.esearch.tool") String tool,
             @ConfigProperty(name = "ncbi.esearch.email") String email,
-            @ConfigProperty(name = "ncbi.esearch.api-key") String apiKey) {
+            @ConfigProperty(name = "ncbi.esearch.api-key") String apiKey,
+            @ConfigProperty(name = "ncbi.rate-limit.with-key") double rateLimitWithKey,
+            @ConfigProperty(name = "ncbi.rate-limit.without-key") double rateLimitWithoutKey) {
         this.ncbiESearchClient = ncbiESearchClient;
         this.tool = tool;
         this.email = email;
@@ -53,7 +55,7 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
                 && !apiKey.equalsIgnoreCase("none")
                 && !apiKey.equalsIgnoreCase("null")
                 && !apiKey.contains("${");
-        double permitsPerSecond = hasValidKey ? 8.0 : 2.0;
+        double permitsPerSecond = hasValidKey ? rateLimitWithKey : rateLimitWithoutKey;
         this.rateLimiter = new SimpleRateLimiter(permitsPerSecond);
     }
 
