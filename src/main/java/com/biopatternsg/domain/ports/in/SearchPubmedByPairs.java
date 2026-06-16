@@ -15,6 +15,6 @@
  */
 package com.biopatternsg.domain.ports.in;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+public interface SearchPubmedByPairs {
+    void execute(String pipelineId, int retmax, String userId);
 }

@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+
+public record SearchPairsByPipelineRequest(
+        @NotBlank String pipelineId,
+        @Min(1) int retmax
+) {
 }

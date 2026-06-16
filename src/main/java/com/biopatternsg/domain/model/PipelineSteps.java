@@ -13,8 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.model;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+public enum PipelineSteps {
+    CONFIG,
+    LAUNCH,
+    TRANSCRIPTION_FACTOR,
+    EXPERT_OBJECTS,
+    SEARCH_LEVELS,
+    COMBINATIONS,
+    SEARCH_PUBMED_IDS
 }

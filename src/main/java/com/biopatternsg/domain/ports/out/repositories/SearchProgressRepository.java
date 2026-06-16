@@ -13,8 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.ports.out.repositories;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import com.biopatternsg.mongo.SearchProgressCollection;
+
+public interface SearchProgressRepository {
+    void initializeProgress(String pipelineId, int totalCount, String userId);
+    SearchProgressCollection incrementAndGet(String pipelineId);
+    void deleteByPipelineId(String pipelineId);
 }

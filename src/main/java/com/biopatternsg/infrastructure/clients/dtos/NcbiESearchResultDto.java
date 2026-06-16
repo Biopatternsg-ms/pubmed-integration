@@ -13,8 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.infrastructure.clients.dtos;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.List;
+
+/**
+ * DTO interno del objeto "esearchresult" del JSON de NCBI ESearch.
+ * El campo "count" viene como String en la API de NCBI.
+ */
+@Getter
+@Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class NcbiESearchResultDto {
+
+    private String count;
+
+    @JsonProperty("idlist")
+    private List<String> idList;
 }

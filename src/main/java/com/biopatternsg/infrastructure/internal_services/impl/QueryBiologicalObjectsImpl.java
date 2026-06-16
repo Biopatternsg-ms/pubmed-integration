@@ -18,7 +18,7 @@ package com.biopatternsg.infrastructure.internal_services.impl;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.infrastructure.adapters.dtos.FatherBrothersAndSonsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.NameAndSynonymRequest;
-import com.biopatternsg.infrastructure.clients.internal_clients.BiologicalObjectsHttpClient;
+import com.biopatternsg.infrastructure.clients.internal.BiologicalObjectsHttpClient;
 import com.biopatternsg.infrastructure.internal_services.QueryBiologicalObjects;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.rest.client.inject.RestClient;

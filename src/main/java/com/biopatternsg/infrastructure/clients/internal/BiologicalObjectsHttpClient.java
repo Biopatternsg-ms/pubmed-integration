@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.clients.internal_clients;
+package com.biopatternsg.infrastructure.clients.internal;
 
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.infrastructure.adapters.dtos.FatherBrothersAndSonsRequest;

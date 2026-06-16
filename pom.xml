@@ -93,6 +93,15 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-rabbitmq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yacson3287</groupId>
+            <artifactId>quarkus-exceptions-handler</artifactId>
+            <version>1.0.4</version>
+        </dependency>
     </dependencies>
 
     <build>

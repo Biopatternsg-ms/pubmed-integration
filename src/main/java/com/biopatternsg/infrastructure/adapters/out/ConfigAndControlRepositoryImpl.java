@@ -15,29 +15,21 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.domain.ports.out.repositories.PairRepository;
-import com.biopatternsg.mongo.PairsCollection;
-import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
+import com.biopatternsg.infrastructure.internal_services.QueryConfigAndControl;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
 @ApplicationScoped
 @RequiredArgsConstructor
-public class PairRepositoryImpl implements PairRepository, PanacheMongoRepository<PairsCollection> {
-    @Override
-    public void save(PairsCollection pairsCollection) {
-        persistOrUpdate(pairsCollection);
-    }
+public class ConfigAndControlRepositoryImpl implements ConfigAndControlRepository {
+
+    private final QueryConfigAndControl configAndControlService;
 
     @Override
-    public void deleteByPipelineId(String pipelineId) {
-        delete("pipelineId", pipelineId);
-    }
-
-    @Override
-    public List<PairsCollection> findByPipelineId(String pipelineId) {
-        return list("pipelineId", pipelineId);
+    public void updateStep(String pipelineId, PipelineSteps step, Status status, String userId) {
+        configAndControlService.updateStep(pipelineId, step.name(), status.name(), userId);
     }
 }

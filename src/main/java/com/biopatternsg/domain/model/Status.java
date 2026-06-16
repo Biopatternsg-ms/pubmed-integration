@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.model;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+public enum Status {
+    PENDING,
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED
 }

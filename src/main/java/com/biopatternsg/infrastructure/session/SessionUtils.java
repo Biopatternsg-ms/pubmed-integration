@@ -13,8 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.infrastructure.session;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.core.MultivaluedMap;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@RequestScoped
+public class SessionUtils {
+
+    private MultivaluedMap<String, String> context;
+
+    public String getUserId(){
+        return this.context.get("x-user-id").getFirst();
+    }
+
 }

@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.ports.out.producers;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import com.biopatternsg.domain.model.NcbiSearchRequest;
+
+public interface NcbiQueueSender {
+    void send(NcbiSearchRequest request);
 }

@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.ports.out.external_repositories;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
+
+public interface ConfigAndControlRepository {
+    void updateStep(String pipelineId, PipelineSteps step, Status status, String userId);
 }

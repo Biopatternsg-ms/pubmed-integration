@@ -13,8 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.mongo;
 
-public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@MongoEntity(collection = "search_progress")
+public class SearchProgressCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private int completedCount;
+    private int totalCount;
+    private String userId;
 }

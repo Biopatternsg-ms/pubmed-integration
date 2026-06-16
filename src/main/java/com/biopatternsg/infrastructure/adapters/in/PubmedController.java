@@ -16,14 +16,19 @@
 package com.biopatternsg.infrastructure.adapters.in;
 
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
+import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import com.biopatternsg.infrastructure.session.SessionUtils;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -35,15 +40,19 @@ import java.util.concurrent.Executor;
 public class PubmedController {
 
     private final BuildPubmedPairs buildPubmedPairs;
+    private final SearchPubmedByPairs searchPubmedByPairs;
     private final Executor executor;
+    private final SessionUtils sessionUtils;
 
     @POST
     @Path("/build-pairs")
+    @ActivateRequestContext
     public Response buildTreeMesh(@Valid BuildPairsRequest buildPairsRequest) {
 
+        String userId = sessionUtils.getUserId();
         CompletableFuture.runAsync(() -> {
             try {
-                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels());
+                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId);
             } catch (Exception e) {
                 log.error("Error building pubmed pairs", e);
             }
@@ -51,6 +60,27 @@ public class PubmedController {
 
         return Response.accepted()
                 .entity("{\"message\": \"Buildind pubmed pairs\"}")
+                .build();
+    }
+
+    @POST
+    @Path("/search-pubmed-ids-by-pairs")
+    @ActivateRequestContext
+    public Response searchPairs(
+            @Valid SearchPairsByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);
+            } catch (Exception e) {
+                log.error("Error searching pubmed pairs", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity("{\"message\": \"Searching pubmed IDS by pairs\"}")
                 .build();
     }
 
