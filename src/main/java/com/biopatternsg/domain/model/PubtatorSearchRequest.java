@@ -15,13 +15,13 @@
  */
 package com.biopatternsg.domain.model;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+import java.util.List;
+
+public record PubtatorSearchRequest(
+        String pipelineId,
+        List<String> pmids,
+        int batchIndex,
+        int batchesTotal,
+        String userId
+) {
 }

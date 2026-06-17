@@ -17,8 +17,10 @@ package com.biopatternsg.infrastructure.adapters.in;
 
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
+import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
@@ -41,6 +43,7 @@ public class PubmedController {
 
     private final BuildPubmedPairs buildPubmedPairs;
     private final SearchPubmedByPairs searchPubmedByPairs;
+    private final SearchPubtatorByPmids searchPubtatorByPmids;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -81,6 +84,27 @@ public class PubmedController {
 
         return Response.accepted()
                 .entity("{\"message\": \"Searching pubmed IDS by pairs\"}")
+                .build();
+    }
+
+    @POST
+    @Path("/search-pubtator-by-pmids")
+    @ActivateRequestContext
+    public Response searchPubtatorByPmids(
+            @Valid SearchPubtatorByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                searchPubtatorByPmids.execute(request.pipelineId(), userId);
+            } catch (Exception e) {
+                log.error("Error searching PubTator by pmids", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity("{\"message\": \"Searching PubTator by pmids\"}")
                 .build();
     }
 

@@ -13,15 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.domain.ports.in;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+public interface SearchPubtatorByPmids {
+    void execute(String pipelineId, String userId);
 }

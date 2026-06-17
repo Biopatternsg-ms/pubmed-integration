@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.domain.ports.out.repositories;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+import com.biopatternsg.mongo.PubtatorResultCollection;
+import java.util.List;
+
+public interface PubtatorResultRepository {
+    void save(PubtatorResultCollection result);
+    void saveAll(List<PubtatorResultCollection> results);
+    List<String> findExistingPmids(List<String> pmids);
 }

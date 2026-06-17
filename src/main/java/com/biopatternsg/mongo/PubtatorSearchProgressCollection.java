@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.mongo;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@MongoEntity(collection = "pubtator_search_progress")
+public class PubtatorSearchProgressCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private int completedCount;
+    private int totalCount;
+    private String userId;
 }

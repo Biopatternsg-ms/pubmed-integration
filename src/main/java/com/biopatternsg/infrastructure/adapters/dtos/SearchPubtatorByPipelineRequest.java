@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+import jakarta.validation.constraints.NotBlank;
+
+public record SearchPubtatorByPipelineRequest(
+        @NotBlank String pipelineId
+) {
 }
