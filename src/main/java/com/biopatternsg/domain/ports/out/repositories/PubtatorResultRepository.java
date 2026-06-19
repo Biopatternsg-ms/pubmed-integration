@@ -15,11 +15,11 @@
  */
 package com.biopatternsg.domain.ports.out.repositories;
 
-import com.biopatternsg.mongo.PubtatorResultCollection;
+import com.biopatternsg.domain.model.PubtatorResult;
 import java.util.List;
 
 public interface PubtatorResultRepository {
-    void save(PubtatorResultCollection result);
-    void saveAll(List<PubtatorResultCollection> results);
+    void save(PubtatorResult result);
+    void saveAll(List<PubtatorResult> results);
     List<String> findExistingPmids(List<String> pmids);
 }
