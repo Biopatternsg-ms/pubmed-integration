@@ -35,7 +35,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class NcbiQueueConsumerRabbitImpl {
+public class NcbiRabbitConsumer {
 
     private final NcbiSearchRepoWeb ncbiSearchRepoWeb;
     private final PubmedResultRepository pubmedResultRepository;

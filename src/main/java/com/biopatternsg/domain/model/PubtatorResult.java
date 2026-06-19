@@ -15,13 +15,31 @@
  */
 package com.biopatternsg.domain.model;
 
-public enum PipelineSteps {
-    CONFIG,
-    LAUNCH,
-    TRANSCRIPTION_FACTOR,
-    EXPERT_OBJECTS,
-    SEARCH_LEVELS,
-    COMBINATIONS,
-    SEARCH_PUBMED_IDS,
-    SEARCH_PUBTATOR
+import java.util.List;
+
+public record PubtatorResult(
+        String pmid,
+        String title,
+        String text,
+        List<PubtatorObject> objects,
+        List<PubtatorEvent> events
+) {
+    public record PubtatorObject(
+            String identifier,
+            String accession,
+            String name,
+            String normalizedId,
+            String type,
+            String biotype,
+            String text,
+            List<Location> locations
+    ) {}
+
+    public record Location(int offset, int length) {}
+
+    public record PubtatorEvent(
+            String relationType,
+            String role1,
+            String role2
+    ) {}
 }
