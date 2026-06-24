@@ -17,6 +17,7 @@ package archtest;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import com.tngtech.archunit.library.Architectures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
-public class ArchitectureLayerTest {
+class ArchitectureLayerTest {
 
     private static final String ROOT = "com.biopatternsg";
 
@@ -56,6 +57,54 @@ public class ArchitectureLayerTest {
                 .whereLayer("ApplicationUsesCases").mayNotBeAccessedByAnyLayer();
         architecture.check(this.javaClasses);
 
+    }
+
+    @DisplayName("The Domain layer should not depend on Application or Infrastructure layers")
+    @Test
+    void domainLayerIsolationTest() {
+        ArchRuleDefinition.noClasses()
+                .that().resideInAPackage(ROOT + ".domain..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        ROOT + ".application..",
+                        ROOT + ".infrastructure.."
+                )
+                .check(this.javaClasses);
+    }
+
+    @DisplayName("The Application layer should not depend on Infrastructure layer")
+    @Test
+    void applicationLayerIsolationTest() {
+        ArchRuleDefinition.noClasses()
+                .that().resideInAPackage(ROOT + ".application..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".infrastructure..")
+                .check(this.javaClasses);
+    }
+
+    @DisplayName("Use Cases should follow naming convention")
+    @Test
+    void useCasesNamingConventionTest() {
+        ArchRuleDefinition.classes()
+                .that().resideInAPackage("..application.usecase..")
+                .should().haveSimpleNameEndingWith("UseCase")
+                .check(this.javaClasses);
+    }
+
+    @DisplayName("Controllers should follow naming convention")
+    @Test
+    void controllersNamingConventionTest() {
+        ArchRuleDefinition.classes()
+                .that().resideInAPackage("..infrastructure.adaptars.in.restcontrollers..")
+                .should().haveSimpleNameEndingWith("Controller")
+                .check(this.javaClasses);
+    }
+
+    @DisplayName("Adapters should follow naming convention")
+    @Test
+    void adaptersNamingConventionTest() {
+        ArchRuleDefinition.classes()
+                .that().resideInAPackage("..infrastructure.adaptars.out..")
+                .should().haveSimpleNameEndingWith("Adapter")
+                .check(this.javaClasses);
     }
 
 }
