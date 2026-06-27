@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase;
 
-import com.biopatternsg.domain.model.PubtatorResult;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record KbEvent(
+        KbRelation event,
+        List<String> pubmedIds
+) {}

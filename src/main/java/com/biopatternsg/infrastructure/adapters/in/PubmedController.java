@@ -18,6 +18,7 @@ package com.biopatternsg.infrastructure.adapters.in;
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
+import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
@@ -44,6 +45,7 @@ public class PubmedController {
     private final BuildPubmedPairs buildPubmedPairs;
     private final SearchPubmedByPairs searchPubmedByPairs;
     private final SearchPubtatorByPmids searchPubtatorByPmids;
+    private final GenerateKbForPipeline generateKbForPipeline;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -105,6 +107,27 @@ public class PubmedController {
 
         return Response.accepted()
                 .entity("{\"message\": \"Searching PubTator by pmids\"}")
+                .build();
+    }
+
+    @POST
+    @Path("/generate-kb")
+    @ActivateRequestContext
+    public Response generateKb(
+            @Valid SearchPubtatorByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                generateKbForPipeline.execute(request.pipelineId(), userId);
+            } catch (Exception e) {
+                log.error("Error generating KB for pipeline", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity("{\"message\": \"Knowledge base generation pipeline started\"}")
                 .build();
     }
 

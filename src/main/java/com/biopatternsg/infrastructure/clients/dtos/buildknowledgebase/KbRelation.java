@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase;
 
-import com.biopatternsg.domain.model.PubtatorResult;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-}
+/**
+ * Componentes estructurados de un evento de la base de conocimiento.
+ * Equivale a descomponer event('FIRST',relation,'SECOND').
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record KbRelation(
+        String first,
+        String relation,
+        String second
+) {}

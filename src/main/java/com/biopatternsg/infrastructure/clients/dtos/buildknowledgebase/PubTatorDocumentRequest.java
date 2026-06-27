@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase;
 
 import com.biopatternsg.domain.model.PubtatorResult;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-}
+/**
+ * DTO de petición para el endpoint POST /generate-kb de build-knowledge-base.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record PubTatorDocumentRequest(
+        String pipelineId,
+        String pmid,
+        String title,
+        String text,
+        List<PubtatorResult.PubtatorObject> objects,
+        List<PubtatorResult.PubtatorEvent> events
+) {}

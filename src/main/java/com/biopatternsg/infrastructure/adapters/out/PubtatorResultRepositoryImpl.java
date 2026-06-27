@@ -106,4 +106,56 @@ public class PubtatorResultRepositoryImpl implements PubtatorResultRepository, P
         doc.setRole2(event.role2());
         return doc;
     }
+
+    @Override
+    public PubtatorResult findByPmid(String pmid) {
+        PubtatorResultCollection doc = find("pmid", pmid).firstResult();
+        if (doc == null) {
+            return null;
+        }
+        return toDomain(doc);
+    }
+
+    private PubtatorResult toDomain(PubtatorResultCollection doc) {
+        List<PubtatorResult.PubtatorObject> objects = doc.getObjects() == null ? Collections.emptyList() : doc.getObjects().stream()
+                .map(this::toObjectDomain)
+                .toList();
+
+        List<PubtatorResult.PubtatorEvent> events = doc.getEvents() == null ? Collections.emptyList() : doc.getEvents().stream()
+                .map(this::toEventDomain)
+                .toList();
+
+        return new PubtatorResult(
+                doc.getPmid() != null ? doc.getPmid() : "",
+                doc.getTitle() != null ? doc.getTitle() : "",
+                doc.getText() != null ? doc.getText() : "",
+                objects,
+                events
+        );
+    }
+
+    private PubtatorResult.PubtatorObject toObjectDomain(PubtatorResultCollection.PubtatorObject obj) {
+        List<PubtatorResult.Location> locations = obj.getLocations() == null ? Collections.emptyList() : obj.getLocations().stream()
+                .map(loc -> new PubtatorResult.Location(loc.getOffset(), loc.getLength()))
+                .toList();
+
+        return new PubtatorResult.PubtatorObject(
+                obj.getIdentifier() != null ? obj.getIdentifier() : "",
+                obj.getAccession() != null ? obj.getAccession() : "",
+                obj.getName() != null ? obj.getName() : "",
+                obj.getNormalizedId() != null ? obj.getNormalizedId() : "",
+                obj.getType() != null ? obj.getType() : "",
+                obj.getBiotype() != null ? obj.getBiotype() : "",
+                obj.getText() != null ? obj.getText() : "",
+                locations
+        );
+    }
+
+    private PubtatorResult.PubtatorEvent toEventDomain(PubtatorResultCollection.PubtatorEvent event) {
+        return new PubtatorResult.PubtatorEvent(
+                event.getRelationType() != null ? event.getRelationType() : "",
+                event.getRole1() != null ? event.getRole1() : "",
+                event.getRole2() != null ? event.getRole2() : ""
+        );
+    }
 }
