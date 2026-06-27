@@ -15,8 +15,10 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
+import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.GenerateKbResponse;
@@ -36,16 +38,19 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
     private final PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
     private final PubtatorResultRepository pubtatorResultRepository;
     private final BuildKnowledgeBaseHttpClient buildKnowledgeBaseHttpClient;
+    private final KbEventRepository kbEventRepository;
 
     @Inject
     public GenerateKbForPipelineUseCase(
             PubtatorPmidReaderRepository pubtatorPmidReaderRepository,
             PubtatorResultRepository pubtatorResultRepository,
-            @RestClient BuildKnowledgeBaseHttpClient buildKnowledgeBaseHttpClient
+            @RestClient BuildKnowledgeBaseHttpClient buildKnowledgeBaseHttpClient,
+            KbEventRepository kbEventRepository
     ) {
         this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
         this.pubtatorResultRepository = pubtatorResultRepository;
         this.buildKnowledgeBaseHttpClient = buildKnowledgeBaseHttpClient;
+        this.kbEventRepository = kbEventRepository;
     }
 
     @Override
@@ -70,9 +75,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         int notFoundCount = 0;
         int errorCount = 0;
 
-        List<String> temporalTest = allPmids.subList(0, 1);
-
-        for (String pmid : temporalTest) {
+        for (String pmid : allPmids) {
             try {
                 PubtatorResult pubtatorResult = pubtatorResultRepository.findByPmid(pmid);
                 if (pubtatorResult == null) {
@@ -96,6 +99,12 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                         pmid,
                         kbResponse.events() != null ? kbResponse.events().size() : 0,
                         kbResponse.biotypes() != null ? kbResponse.biotypes().size() : 0);
+
+                // 4. Persistir cada evento en MongoDB
+                if (kbResponse.events() != null) {
+                    persistKbEvents(kbResponse.events());
+                }
+
                 successCount++;
 
             } catch (Exception e) {
@@ -106,5 +115,49 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
         log.info("Finished knowledge base generation pipeline for pipelineId=[{}]. Results: Success=[{}], NotFound=[{}], Errors=[{}]",
                 pipelineId, successCount, notFoundCount, errorCount);
+    }
+
+    private void persistKbEvents(List<com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.KbEvent> kbEventDtos) {
+        for (var kbEvent : kbEventDtos) {
+            if (kbEvent.event() == null) {
+                continue;
+            }
+
+            String first    = kbEvent.event().first();
+            String relation = kbEvent.event().relation();
+            String second   = kbEvent.event().second();
+
+            try {
+                var existing = kbEventRepository.findByRelation(first, relation, second);
+
+                if (existing.isEmpty()) {
+                    // Evento nuevo: guardar completo con todos sus pubmedIds
+                    kbEventRepository.save(new KbEvent(
+                            first,
+                            relation,
+                            second,
+                            kbEvent.pubmedIds() != null ? kbEvent.pubmedIds() : List.of()
+                    ));
+                    log.debug("New KbEvent created: [{},{},{}]", first, relation, second);
+                } else {
+                    // Evento existente: agregar solo los pubmedIds que no estén ya registrados
+                    List<String> storedPubmedIds = existing.get().pubmedIds();
+                    if (kbEvent.pubmedIds() != null) {
+                        for (String pubmedId : kbEvent.pubmedIds()) {
+                            if (!storedPubmedIds.contains(pubmedId)) {
+                                kbEventRepository.addPubmedId(first, relation, second, pubmedId);
+                                log.debug("PubmedId [{}] added to existing KbEvent [{},{},{}]",
+                                        pubmedId, first, relation, second);
+                            } else {
+                                log.trace("PubmedId [{}] already registered in KbEvent [{},{},{}] — skipped",
+                                        pubmedId, first, relation, second);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error persisting KbEvent [{},{},{}]: {}", first, relation, second, e.getMessage(), e);
+            }
+        }
     }
 }
