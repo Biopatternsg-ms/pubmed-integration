@@ -26,6 +26,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -33,54 +34,43 @@ import java.util.Optional;
 public class KbEventRepositoryImpl implements KbEventRepository, PanacheMongoRepository<KbEventCollection> {
 
     @Override
-    public Optional<KbEvent> findByRelation(String first, String relation, String second) {
+    public Optional<KbEvent> findByRelation(String pipelineId, String first, String relation, String second) {
         try {
-            KbEventCollection doc = find("first = ?1 and relation = ?2 and second = ?3",
-                    first, relation, second).firstResult();
+            KbEventCollection doc = find("pipelineId = ?1 and first = ?2 and relation = ?3 and second = ?4",
+                    pipelineId, first, relation, second).firstResult();
             return Optional.ofNullable(doc).map(this::toDomain);
         } catch (Exception e) {
-            log.error("Error finding KbEvent [{},{},{}]: {}", first, relation, second, e.getMessage(), e);
+            log.error("Error finding KbEvent [{}, {},{},{}]: {}", pipelineId, first, relation, second, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
 
     @Override
-    public void save(KbEvent event) {
+    public void upsert(String pipelineId, String first, String relation, String second, List<String> pubmedIds) {
         try {
-            KbEventCollection doc = new KbEventCollection();
-            doc.setFirst(event.first());
-            doc.setRelation(event.relation());
-            doc.setSecond(event.second());
-            doc.setPubmedIds(new ArrayList<>(event.pubmedIds()));
-            persist(doc);
-            log.debug("KbEvent saved: [{},{},{}]", event.first(), event.relation(), event.second());
-        } catch (Exception e) {
-            log.error("Error saving KbEvent [{},{},{}]: {}", event.first(), event.relation(), event.second(), e.getMessage(), e);
-            throw new InternalServerError(e);
-        }
-    }
-
-    @Override
-    public void addPubmedId(String first, String relation, String second, String pubmedId) {
-        try {
+            if (pubmedIds == null || pubmedIds.isEmpty()) {
+                return;
+            }
             mongoCollection().updateOne(
                     Filters.and(
+                            Filters.eq("pipelineId", pipelineId),
                             Filters.eq("first", first),
                             Filters.eq("relation", relation),
                             Filters.eq("second", second)
                     ),
-                    Updates.addToSet("pubmedIds", pubmedId)
+                    Updates.addEachToSet("pubmedIds", pubmedIds),
+                    new com.mongodb.client.model.UpdateOptions().upsert(true)
             );
-            log.debug("PubmedId [{}] added to KbEvent [{},{},{}]", pubmedId, first, relation, second);
+            log.debug("KbEvent upserted: [{}, [{},{},{}]] with PMIDs {}", pipelineId, first, relation, second, pubmedIds);
         } catch (Exception e) {
-            log.error("Error adding pubmedId [{}] to KbEvent [{},{},{}]: {}",
-                    pubmedId, first, relation, second, e.getMessage(), e);
+            log.error("Error upserting KbEvent [{}, [{},{},{}]]: {}", pipelineId, first, relation, second, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
 
     private KbEvent toDomain(KbEventCollection doc) {
         return new KbEvent(
+                doc.getPipelineId(),
                 doc.getFirst(),
                 doc.getRelation(),
                 doc.getSecond(),

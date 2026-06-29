@@ -24,10 +24,10 @@ import java.util.List;
 
 /**
  * Entidad MongoDB para los eventos de la base de conocimiento.
- * Cada documento representa una relación biológica única (first + relation + second)
+ * Cada documento representa una relación biológica única (pipelineId + first + relation + second)
  * respaldada por los PubMed IDs que la evidencian.
  *
- * <p>La colección usa un índice único compuesto sobre {first, relation, second}
+ * <p>La colección usa un índice único compuesto sobre {pipelineId, first, relation, second}
  * para garantizar que no existan eventos duplicados.
  */
 @Setter
@@ -35,6 +35,7 @@ import java.util.List;
 @MongoEntity(collection = "kb_events")
 public class KbEventCollection extends PanacheMongoEntity {
 
+    private String pipelineId;
     private String first;
     private String relation;
     private String second;

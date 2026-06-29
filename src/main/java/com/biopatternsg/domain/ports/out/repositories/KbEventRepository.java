@@ -16,7 +16,7 @@
 package com.biopatternsg.domain.ports.out.repositories;
 
 import com.biopatternsg.domain.model.KbEvent;
-
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,19 +25,17 @@ import java.util.Optional;
 public interface KbEventRepository {
 
     /**
-     * Busca un evento por su tripleta (first, relation, second).
+     * Busca un evento por su pipelineId y su tripleta (first, relation, second).
      *
      * @return el evento encontrado, o empty si no existe.
      */
-    Optional<KbEvent> findByRelation(String first, String relation, String second);
+    Optional<KbEvent> findByRelation(String pipelineId, String first, String relation, String second);
 
     /**
-     * Persiste un nuevo evento en la base de datos.
+     * Realiza un registro o actualización atómica (upsert) en MongoDB.
+     * Si la combinación (pipelineId, first, relation, second) no existe, crea el documento con sus pubmedIds.
+     * Si ya existe, añade únicamente los pubmedIds que no estén en la lista.
      */
-    void save(KbEvent event);
-
-    /**
-     * Agrega un pubmedId a la lista del evento existente (identificado por su tripleta).
-     */
-    void addPubmedId(String first, String relation, String second, String pubmedId);
+    void upsert(String pipelineId, String first, String relation, String second, List<String> pubmedIds);
 }
+

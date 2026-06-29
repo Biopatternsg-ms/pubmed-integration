@@ -23,6 +23,7 @@ import java.util.List;
  * respaldada por uno o más PubMed IDs que la evidencian.
  */
 public record KbEvent(
+        String pipelineId,
         String first,
         String relation,
         String second,
