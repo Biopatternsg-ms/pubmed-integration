@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
@@ -59,6 +60,22 @@ public class SynonymRepositoryImpl implements SynonymRepository, PanacheMongoRep
                 log.error("Error upserting synonyms for [{}, {}]: {}", pipelineId, name, e.getMessage(), e);
                 throw new InternalServerError(e);
             }
+        }
+    }
+
+    @Override
+    public Map<String, List<String>> findAllByPipelineId(String pipelineId) {
+        try {
+            return find("pipelineId", pipelineId)
+                    .stream()
+                    .collect(Collectors.toMap(
+                            SynonymCollection::getName,
+                            SynonymCollection::getSynonyms,
+                            (existing, replacement) -> existing
+                    ));
+        } catch (Exception e) {
+            log.error("Error finding all synonyms for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            throw new InternalServerError(e);
         }
     }
 }

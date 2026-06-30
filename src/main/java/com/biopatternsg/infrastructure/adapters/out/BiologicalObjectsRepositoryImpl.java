@@ -38,4 +38,9 @@ public class BiologicalObjectsRepositoryImpl implements BiologicalObjectsReposit
     public List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId) {
         return queryBiologicalObjects.biologicalObjectFatherBrothersAndSons(pipelineId, biologicalObjectId);
     }
+
+    @Override
+    public List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level) {
+        return queryBiologicalObjects.expertObjectsByPipelineAndLevel(pipelineId, level);
+    }
 }

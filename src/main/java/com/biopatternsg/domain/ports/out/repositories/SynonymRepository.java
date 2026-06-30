@@ -25,4 +25,9 @@ public interface SynonymRepository {
      * If it does not exist, creates the document.
      */
     void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms);
+
+    /**
+     * Retrieves all synonyms for a given pipelineId, mapped by their name (main ID).
+     */
+    Map<String, List<String>> findAllByPipelineId(String pipelineId);
 }

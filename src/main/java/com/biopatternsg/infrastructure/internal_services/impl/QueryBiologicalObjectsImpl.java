@@ -43,4 +43,9 @@ public class QueryBiologicalObjectsImpl implements QueryBiologicalObjects {
     public List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId) {
         return biologicalObjectsHttpClient.biologicalObjectFatherBrothersAndSons(new FatherBrothersAndSonsRequest(pipelineId, biologicalObjectId));
     }
+
+    @Override
+    public List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level) {
+        return biologicalObjectsHttpClient.expertObjectsByPipelineAndLevel(new NameAndSynonymRequest(pipelineId, level));
+    }
 }

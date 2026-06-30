@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
-
-import com.biopatternsg.domain.model.BiologicalObject;
+package com.biopatternsg.domain.model;
 
 import java.util.List;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
+public record AlignedResult(
+        String pipelineId,
+        List<String> aligned,
+        List<String> noAligned,
+        List<AlignedAs> alignedAs,
+        List<String> alignedAndAlternatives
+) {
 }
