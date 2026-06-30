@@ -1,0 +1,64 @@
+/*
+ * Copyright © 2026 biopatternsg (biopatternsg@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.biopatternsg.infrastructure.adapters.out;
+
+import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.mongo.SynonymCollection;
+import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@ApplicationScoped
+public class SynonymRepositoryImpl implements SynonymRepository, PanacheMongoRepository<SynonymCollection> {
+
+    @Override
+    public void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms) {
+        if (synonyms == null || synonyms.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<String, List<String>> entry : synonyms.entrySet()) {
+            String name = entry.getKey();
+            List<String> synonymList = entry.getValue();
+
+            if (synonymList == null || synonymList.isEmpty()) {
+                continue;
+            }
+
+            try {
+                mongoCollection().updateOne(
+                        Filters.and(
+                                Filters.eq("pipelineId", pipelineId),
+                                Filters.eq("name", name)
+                        ),
+                        Updates.addEachToSet("synonyms", synonymList),
+                        new com.mongodb.client.model.UpdateOptions().upsert(true)
+                );
+                log.debug("Synonyms upserted for pipelineId=[{}], name=[{}]: {}", pipelineId, name, synonymList);
+            } catch (Exception e) {
+                log.error("Error upserting synonyms for [{}, {}]: {}", pipelineId, name, e.getMessage(), e);
+                throw new InternalServerError(e);
+            }
+        }
+    }
+}
