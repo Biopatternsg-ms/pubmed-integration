@@ -140,9 +140,10 @@ public class PubmedController {
             @Valid SearchPubtatorByPipelineRequest request
     ) {
 
+        String userId = sessionUtils.getUserId();
         CompletableFuture.runAsync(() -> {
             try {
-                generateAlignedObjects.execute(request.pipelineId());
+                generateAlignedObjects.execute(request.pipelineId(), userId);
             } catch (Exception e) {
                 log.error("Error generating aligned objects", e);
             }

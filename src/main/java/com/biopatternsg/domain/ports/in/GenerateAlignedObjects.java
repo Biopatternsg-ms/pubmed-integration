@@ -16,5 +16,5 @@
 package com.biopatternsg.domain.ports.in;
 
 public interface GenerateAlignedObjects {
-    void execute(String pipelineId);
+    void execute(String pipelineId, String userId);
 }

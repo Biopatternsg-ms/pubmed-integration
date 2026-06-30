@@ -20,8 +20,11 @@ import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.out.external_repositories.BiologicalObjectsRepository;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -41,20 +44,23 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     private final BiologicalObjectsRepository biologicalObjectsRepository;
     private final SynonymRepository synonymRepository;
     private final AlignedResultRepository alignedResultRepository;
+    private final ConfigAndControlRepository configAndControlRepository;
 
     @Inject
     public GenerateAlignedObjectsUseCase(
             BiologicalObjectsRepository biologicalObjectsRepository,
             SynonymRepository synonymRepository,
-            AlignedResultRepository alignedResultRepository
+            AlignedResultRepository alignedResultRepository,
+            ConfigAndControlRepository configAndControlRepository
     ) {
         this.biologicalObjectsRepository = biologicalObjectsRepository;
         this.synonymRepository = synonymRepository;
         this.alignedResultRepository = alignedResultRepository;
+        this.configAndControlRepository = configAndControlRepository;
     }
 
     @Override
-    public void execute(String pipelineId) {
+    public void execute(String pipelineId, String userId) {
         log.info("Starting expert objects alignment for pipelineId=[{}]", pipelineId);
 
         try {
@@ -148,10 +154,15 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
             );
 
             alignedResultRepository.save(alignedResult);
+            
+            // Notify config-and-control that the step is COMPLETED
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId);
+            
             log.info("Successfully completed expert objects alignment for pipelineId=[{}]", pipelineId);
 
         } catch (Exception e) {
             log.error("Fatal error during expert objects alignment for pipelineId=[{}]", pipelineId, e);
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
             throw e;
         }
     }
