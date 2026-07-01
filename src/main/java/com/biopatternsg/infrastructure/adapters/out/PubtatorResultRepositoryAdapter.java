@@ -28,7 +28,7 @@ import java.util.List;
 
 @Slf4j
 @ApplicationScoped
-public class PubtatorResultRepositoryImpl implements PubtatorResultRepository, PanacheMongoRepository<PubtatorResultCollection> {
+public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository, PanacheMongoRepository<PubtatorResultCollection> {
 
     @Override
     public void save(PubtatorResult result) {

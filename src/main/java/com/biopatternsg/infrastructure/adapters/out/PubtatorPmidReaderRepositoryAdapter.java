@@ -23,7 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
 @ApplicationScoped
-public class PubtatorPmidReaderRepositoryImpl implements PubtatorPmidReaderRepository, PanacheMongoRepository<PubmedResultCollection> {
+public class PubtatorPmidReaderRepositoryAdapter implements PubtatorPmidReaderRepository, PanacheMongoRepository<PubmedResultCollection> {
 
     @Override
     public List<String> findPubmedIdsByPipelineId(String pipelineId) {

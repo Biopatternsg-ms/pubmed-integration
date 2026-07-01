@@ -25,7 +25,7 @@ import java.util.List;
 
 @ApplicationScoped
 @RequiredArgsConstructor
-public class BiologicalObjectsRepositoryImpl implements BiologicalObjectsRepository {
+public class BiologicalObjectsRepositoryAdapter implements BiologicalObjectsRepository {
 
     private final QueryBiologicalObjects queryBiologicalObjects;
 

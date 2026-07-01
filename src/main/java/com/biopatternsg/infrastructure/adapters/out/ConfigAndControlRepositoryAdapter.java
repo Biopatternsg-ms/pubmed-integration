@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 @ApplicationScoped
 @RequiredArgsConstructor
-public class ConfigAndControlRepositoryImpl implements ConfigAndControlRepository {
+public class ConfigAndControlRepositoryAdapter implements ConfigAndControlRepository {
 
     private final QueryConfigAndControl configAndControlService;
 

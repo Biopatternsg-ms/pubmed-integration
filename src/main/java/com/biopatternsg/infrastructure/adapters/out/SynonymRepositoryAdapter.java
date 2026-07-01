@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
-public class SynonymRepositoryImpl implements SynonymRepository, PanacheMongoRepository<SynonymCollection> {
+public class SynonymRepositoryAdapter implements SynonymRepository, PanacheMongoRepository<SynonymCollection> {
 
     @Override
     public void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms) {

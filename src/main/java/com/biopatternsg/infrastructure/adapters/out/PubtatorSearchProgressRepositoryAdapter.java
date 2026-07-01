@@ -15,8 +15,8 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
-import com.biopatternsg.mongo.SearchProgressCollection;
+import com.biopatternsg.domain.ports.out.repositories.PubtatorSearchProgressRepository;
+import com.biopatternsg.mongo.PubtatorSearchProgressCollection;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
@@ -25,14 +25,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.Document;
 
 @ApplicationScoped
-public class SearchProgressRepositoryImpl implements SearchProgressRepository, PanacheMongoRepository<SearchProgressCollection> {
+public class PubtatorSearchProgressRepositoryAdapter
+        implements PubtatorSearchProgressRepository, PanacheMongoRepository<PubtatorSearchProgressCollection> {
 
     @Override
     public void initializeProgress(String pipelineId, int totalCount, String userId) {
         // Delete any existing progress document for the pipeline to avoid duplicate/stale records
         deleteByPipelineId(pipelineId);
 
-        SearchProgressCollection progress = new SearchProgressCollection();
+        PubtatorSearchProgressCollection progress = new PubtatorSearchProgressCollection();
         progress.setPipelineId(pipelineId);
         progress.setCompletedCount(0);
         progress.setTotalCount(totalCount);
@@ -41,8 +42,8 @@ public class SearchProgressRepositoryImpl implements SearchProgressRepository, P
     }
 
     @Override
-    public SearchProgressCollection incrementAndGet(String pipelineId) {
-        MongoCollection<SearchProgressCollection> collection = mongoCollection();
+    public PubtatorSearchProgressCollection incrementAndGet(String pipelineId) {
+        MongoCollection<PubtatorSearchProgressCollection> collection = mongoCollection();
         Document filter = new Document("pipelineId", pipelineId);
         Document update = new Document("$inc", new Document("completedCount", 1));
         FindOneAndUpdateOptions options = new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER);

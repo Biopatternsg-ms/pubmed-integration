@@ -15,28 +15,29 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
-import com.biopatternsg.mongo.PubmedResultCollection;
-import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
+import com.biopatternsg.domain.ports.out.repositories.PairRepository;
+import com.biopatternsg.mongo.PairsCollection;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
-@Slf4j
+import java.util.List;
+
 @ApplicationScoped
-public class PubmedResultRepositoryImpl implements PubmedResultRepository, PanacheMongoRepository<PubmedResultCollection> {
+@RequiredArgsConstructor
+public class PairRepositoryAdapter implements PairRepository, PanacheMongoRepository<PairsCollection> {
+    @Override
+    public void save(PairsCollection pairsCollection) {
+        persistOrUpdate(pairsCollection);
+    }
 
     @Override
-    public void save(String pipelineId, String pubmedId) {
-        try {
-            PubmedResultCollection doc = new PubmedResultCollection();
-            doc.setPipelineId(pipelineId);
-            doc.setPubmedId(pubmedId);
-            persist(doc);
-        } catch (Exception e) {
-            if (e.getMessage() == null || !e.getMessage().contains("E11000")) {
-                throw new InternalServerError(e);
-            }
-        }
+    public void deleteByPipelineId(String pipelineId) {
+        delete("pipelineId", pipelineId);
+    }
+
+    @Override
+    public List<PairsCollection> findByPipelineId(String pipelineId) {
+        return list("pipelineId", pipelineId);
     }
 }

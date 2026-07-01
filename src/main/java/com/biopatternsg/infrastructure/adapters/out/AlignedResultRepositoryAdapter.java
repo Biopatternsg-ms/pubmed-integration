@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
-public class AlignedResultRepositoryImpl implements AlignedResultRepository, PanacheMongoRepository<AlignedResultCollection> {
+public class AlignedResultRepositoryAdapter implements AlignedResultRepository, PanacheMongoRepository<AlignedResultCollection> {
 
     @Override
     public void save(AlignedResult alignedResult) {

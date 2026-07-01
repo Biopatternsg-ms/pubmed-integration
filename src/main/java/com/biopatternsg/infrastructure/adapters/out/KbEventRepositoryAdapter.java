@@ -31,7 +31,7 @@ import java.util.Optional;
 
 @Slf4j
 @ApplicationScoped
-public class KbEventRepositoryImpl implements KbEventRepository, PanacheMongoRepository<KbEventCollection> {
+public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongoRepository<KbEventCollection> {
 
     @Override
     public Optional<KbEvent> findByRelation(String pipelineId, String first, String relation, String second) {

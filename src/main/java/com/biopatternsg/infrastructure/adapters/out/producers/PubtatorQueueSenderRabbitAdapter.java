@@ -27,7 +27,7 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 @Slf4j
 @ApplicationScoped
-public class PubtatorQueueSenderRabbitImpl implements PubtatorQueueSender {
+public class PubtatorQueueSenderRabbitAdapter implements PubtatorQueueSender {
 
     @Inject
     @Channel("pubtator-out")
