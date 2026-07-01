@@ -16,6 +16,7 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.application.services.BiologicalObjectsService;
+import com.biopatternsg.application.util.PairsGenerator;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.model.Pair;
 import com.biopatternsg.domain.model.PipelineSteps;
