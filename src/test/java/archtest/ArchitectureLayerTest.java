@@ -93,7 +93,7 @@ class ArchitectureLayerTest {
     @Test
     void controllersNamingConventionTest() {
         ArchRuleDefinition.classes()
-                .that().resideInAPackage("..infrastructure.adaptars.in.restcontrollers..")
+                .that().resideInAPackage("..infrastructure.adapters.in.restcontrollers..")
                 .should().haveSimpleNameEndingWith("Controller")
                 .check(this.javaClasses);
     }
@@ -102,7 +102,7 @@ class ArchitectureLayerTest {
     @Test
     void adaptersNamingConventionTest() {
         ArchRuleDefinition.classes()
-                .that().resideInAPackage("..infrastructure.adaptars.out..")
+                .that().resideInAPackage("..infrastructure.adapters.out..")
                 .should().haveSimpleNameEndingWith("Adapter")
                 .check(this.javaClasses);
     }

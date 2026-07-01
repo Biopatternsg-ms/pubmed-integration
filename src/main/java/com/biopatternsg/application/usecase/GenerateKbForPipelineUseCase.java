@@ -24,14 +24,12 @@ import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
-import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.GenerateKbResponse;
-import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.KbEvent;
-import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.PubTatorDocumentRequest;
-import com.biopatternsg.infrastructure.clients.internal.BuildKnowledgeBaseHttpClient;
+import com.biopatternsg.domain.model.KbEvent;
+import com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb;
+import com.biopatternsg.domain.ports.out.external_repositories.GenerateKbResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,7 +40,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
     private final PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
     private final PubtatorResultRepository pubtatorResultRepository;
-    private final BuildKnowledgeBaseHttpClient buildKnowledgeBaseHttpClient;
+    private final BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb;
     private final KbEventRepository kbEventRepository;
     private final ConfigAndControlRepository configAndControlRepository;
     private final SynonymRepository synonymRepository;
@@ -51,14 +49,14 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
     public GenerateKbForPipelineUseCase(
             PubtatorPmidReaderRepository pubtatorPmidReaderRepository,
             PubtatorResultRepository pubtatorResultRepository,
-            @RestClient BuildKnowledgeBaseHttpClient buildKnowledgeBaseHttpClient,
+            BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb,
             KbEventRepository kbEventRepository,
             ConfigAndControlRepository configAndControlRepository,
             SynonymRepository synonymRepository
     ) {
         this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
         this.pubtatorResultRepository = pubtatorResultRepository;
-        this.buildKnowledgeBaseHttpClient = buildKnowledgeBaseHttpClient;
+        this.buildKnowledgeBaseRepoWeb = buildKnowledgeBaseRepoWeb;
         this.kbEventRepository = kbEventRepository;
         this.configAndControlRepository = configAndControlRepository;
         this.synonymRepository = synonymRepository;
@@ -97,30 +95,29 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                         return; // equivale a continue en el for secuencial
                     }
 
-                    // 3. Consultar el endpoint generate-kb de build-knowledge-base
+                    // 3. Consultar el endpoint generate-kb de build-knowledge-base a través del puerto
                     log.debug("Sending PMID=[{}] to build-knowledge-base endpoint", pmid);
-                    var request = new PubTatorDocumentRequest(
+                    GenerateKbResult kbResult = buildKnowledgeBaseRepoWeb.generateKnowledgeBase(
                             pipelineId,
                             pubtatorResult.pmid(),
                             pubtatorResult.title(),
                             pubtatorResult.text(),
                             pubtatorResult.objects(),
                             pubtatorResult.events()
-                    );
-                    GenerateKbResponse kbResponse = buildKnowledgeBaseHttpClient.generateKb(request);
-                    log.info("KB response received for PMID=[{}]: events=[{}], biotypes=[{}]",
-                            pmid,
-                            kbResponse.events() != null ? kbResponse.events().size() : 0,
-                            kbResponse.biotypes() != null ? kbResponse.biotypes().size() : 0);
+                     );
+                     log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}].",
+                             pmid,
+                             kbResult.events() != null ? kbResult.events().size() : 0,
+                             kbResult.synonyms() != null ? kbResult.synonyms().size() : 0);
 
                     // 4. Persistir cada evento en MongoDB
-                    if (kbResponse.events() != null) {
-                        persistKbEvents(pipelineId, kbResponse.events());
+                    if (kbResult.events() != null) {
+                        persistKbEvents(pipelineId, kbResult.events());
                     }
 
                     // 5. Persistir los sinónimos en MongoDB
-                    if (kbResponse.synonyms() != null) {
-                        synonymRepository.saveSynonyms(pipelineId, kbResponse.synonyms());
+                    if (kbResult.synonyms() != null) {
+                        synonymRepository.saveSynonyms(pipelineId, kbResult.synonyms());
                     }
 
                     successCount.incrementAndGet();
@@ -141,20 +138,18 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         }
     }
 
-    private void persistKbEvents(String pipelineId, List<KbEvent> kbEventDtos) {
-        for (var kbEvent : kbEventDtos) {
-            if (kbEvent.event() == null) {
-                continue;
-            }
-
-            String first    = kbEvent.event().first();
-            String relation = kbEvent.event().relation();
-            String second   = kbEvent.event().second();
-
+    private void persistKbEvents(String pipelineId, List<KbEvent> kbEvents) {
+        for (var kbEvent : kbEvents) {
             try {
-                kbEventRepository.upsert(pipelineId, first, relation, second, kbEvent.pubmedIds());
+                kbEventRepository.upsert(
+                        pipelineId,
+                        kbEvent.first(),
+                        kbEvent.relation(),
+                        kbEvent.second(),
+                        kbEvent.pubmedIds()
+                );
             } catch (Exception e) {
-                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", pipelineId, first, relation, second, e.getMessage(), e);
+                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", pipelineId, kbEvent.first(), kbEvent.relation(), kbEvent.second(), e.getMessage(), e);
             }
         }
     }
