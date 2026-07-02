@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.domain.ports.out.external_repositories;
 
-import com.biopatternsg.domain.model.BiologicalObject;
+import com.biopatternsg.domain.model.KbEvent;
 
 import java.util.List;
+import java.util.Map;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
-}
+public record GenerateKbResult(
+        List<KbEvent> events,
+        Map<String, List<String>> synonyms
+) {}

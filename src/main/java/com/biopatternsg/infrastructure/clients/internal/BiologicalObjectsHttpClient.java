@@ -35,4 +35,8 @@ public interface BiologicalObjectsHttpClient {
     @Path("biological-object/father-brothers-and-sons")
     List<BiologicalObject> biologicalObjectFatherBrothersAndSons(FatherBrothersAndSonsRequest fatherBrothersAndSonsRequest);
 
+    @POST
+    @Path("biological-object/get-expert-objects")
+    List<BiologicalObject> expertObjectsByPipelineAndLevel(NameAndSynonymRequest nameAndSynonymRequest);
+
 }

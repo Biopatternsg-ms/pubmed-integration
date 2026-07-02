@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
-
-import com.biopatternsg.domain.model.BiologicalObject;
+package com.biopatternsg.domain.model;
 
 import java.util.List;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
-}
+/**
+ * Modelo de dominio que representa un evento de la base de conocimiento.
+ * Un evento es una relación biológica entre dos entidades (first → relation → second),
+ * respaldada por uno o más PubMed IDs que la evidencian.
+ */
+public record KbEvent(
+        String pipelineId,
+        String first,
+        String relation,
+        String second,
+        List<String> pubmedIds
+) {}

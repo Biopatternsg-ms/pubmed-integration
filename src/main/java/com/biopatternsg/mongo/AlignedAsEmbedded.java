@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.mongo;
 
-import com.biopatternsg.domain.model.BiologicalObject;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.util.List;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class AlignedAsEmbedded {
+    private String expertObjectName;
+    private List<String> alternativeIds;
 }

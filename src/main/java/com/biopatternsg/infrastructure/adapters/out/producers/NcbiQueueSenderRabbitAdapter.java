@@ -27,7 +27,7 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 @Slf4j
 @ApplicationScoped
-public class NcbiQueueSenderRabbitImpl implements NcbiQueueSender {
+public class NcbiQueueSenderRabbitAdapter implements NcbiQueueSender {
 
     @Inject
     @Channel("ncbi-out")

@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase;
 
-import com.biopatternsg.domain.model.BiologicalObject;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.List;
-
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
-}
+/**
+ * Componentes estructurados de un evento de la base de conocimiento.
+ * Equivale a descomponer event('FIRST',relation,'SECOND').
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record KbRelation(
+        String first,
+        String relation,
+        String second
+) {}

@@ -22,4 +22,5 @@ public interface PubtatorResultRepository {
     void save(PubtatorResult result);
     void saveAll(List<PubtatorResult> results);
     List<String> findExistingPmids(List<String> pmids);
+    PubtatorResult findByPmid(String pmid);
 }

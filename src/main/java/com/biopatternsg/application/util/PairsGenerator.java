@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.application.usecase;
+package com.biopatternsg.application.util;
 
 public class PairsGenerator {
-    static class TermsPair {
-        String first;
-        String second;
+    public static class TermsPair {
+        public final String first;
+        public final String second;
 
         public TermsPair(String first, String second) {
             if (first.compareTo(second) <= 0) {
@@ -41,7 +41,7 @@ public class PairsGenerator {
 
         @Override
         public int hashCode() {
-            // El 31 es un primo impar que ayuda a distribuir los hashes y permite optimización por desplazamiento de bits
+            // El 31 es un primo impres que ayuda a distribuir los hashes y permite optimización por desplazamiento de bits
             return first.hashCode() * 31 + second.hashCode();
         }
 

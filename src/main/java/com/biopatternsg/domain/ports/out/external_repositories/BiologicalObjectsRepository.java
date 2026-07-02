@@ -22,4 +22,5 @@ import java.util.List;
 public interface BiologicalObjectsRepository {
     List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
     List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
+    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
 }

@@ -13,14 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase;
 
-import com.biopatternsg.domain.model.BiologicalObject;
+import com.biopatternsg.domain.model.PubtatorResult;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
-}
+/**
+ * DTO de petición para el endpoint POST /generate-kb de build-knowledge-base.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record PubTatorDocumentRequest(
+        String pipelineId,
+        String pmid,
+        String title,
+        String text,
+        List<PubtatorResult.PubtatorObject> objects,
+        List<PubtatorResult.PubtatorEvent> events
+) {}

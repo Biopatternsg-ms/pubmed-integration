@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
-
-import com.biopatternsg.domain.model.BiologicalObject;
+package com.biopatternsg.domain.ports.out.repositories;
 
 import java.util.List;
+import java.util.Map;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
+public interface SynonymRepository {
+    /**
+     * Persists synonym information to the MongoDB collection.
+     * If the document (pipelineId, name) exists, appends the new synonyms (preventing duplicates).
+     * If it does not exist, creates the document.
+     */
+    void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms);
+
+    /**
+     * Retrieves all synonyms for a given pipelineId, mapped by their name (main ID).
+     */
+    Map<String, List<String>> findAllByPipelineId(String pipelineId);
 }

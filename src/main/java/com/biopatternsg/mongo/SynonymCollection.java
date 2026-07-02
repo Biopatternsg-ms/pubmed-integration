@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.mongo;
 
-import com.biopatternsg.domain.model.BiologicalObject;
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
-public interface QueryBiologicalObjects {
-    List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level);
-    List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId);
-    List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level);
+@Setter
+@Getter
+@MongoEntity(collection = "synonyms")
+public class SynonymCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private String name;
+    private List<String> synonyms;
 }
