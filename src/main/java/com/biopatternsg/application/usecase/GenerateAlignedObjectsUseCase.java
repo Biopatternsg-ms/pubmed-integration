@@ -30,8 +30,9 @@ import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +41,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
+
+    private static final int EXPERT_LEVEL = 2;
 
     private final BiologicalObjectsRepository biologicalObjectsRepository;
     private final SynonymRepository synonymRepository;
@@ -64,106 +67,139 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
         log.info("Starting expert objects alignment for pipelineId=[{}]", pipelineId);
 
         try {
-            // 1. Fetch expert biological objects for level 2
-            List<BiologicalObject> expertObjects = biologicalObjectsRepository.expertObjectsByPipelineAndLevel(pipelineId, 2);
-            log.info("Fetched [{}] expert biological objects for pipelineId=[{}]", expertObjects.size(), pipelineId);
 
-            // 2. Fetch all synonyms for the pipeline
-            Map<String, List<String>> synonymsMap = synonymRepository.findAllByPipelineId(pipelineId);
-            log.info("Fetched synonyms dictionary with [{}] entries for pipelineId=[{}]", synonymsMap.size(), pipelineId);
+            List<BiologicalObject> expertObjects = fetchExpertObjects(pipelineId);
+            Map<String, List<String>> synonymsMap = fetchSynonyms(pipelineId);
 
-            // 3. Convert user objects names to uppercase and distinct
-            List<String> userObjects = expertObjects.stream()
-                    .map(BiologicalObject::name)
-                    .filter(name -> name != null && !name.trim().isEmpty())
-                    .map(String::toUpperCase)
-                    .distinct()
-                    .collect(Collectors.toList());
+            List<String> userObjects = getNormalizedUserObjects(expertObjects);
 
-            // Normalize synonyms map to uppercase keys and uppercase synonym lists for robust matching
-            Map<String, List<String>> synonymsMapUpper = synonymsMap.entrySet().stream()
-                    .collect(Collectors.toMap(
-                            entry -> entry.getKey().toUpperCase(),
-                            entry -> entry.getValue().stream()
-                                    .filter(syn -> syn != null && !syn.trim().isEmpty())
-                                    .map(String::toUpperCase)
-                                    .collect(Collectors.toList()),
-                            (v1, v2) -> {
-                                List<String> merged = new ArrayList<>(v1);
-                                merged.addAll(v2);
-                                return merged;
-                            }
-                    ));
+            Map<String, List<String>> synonymsMapUpper = getNormalizedSynonyms(synonymsMap);
 
-            // 4. Calculate aligned objects (exist as key in synonyms)
-            List<String> aligned = userObjects.stream()
-                    .filter(synonymsMapUpper::containsKey)
-                    .collect(Collectors.toList());
+            List<String> aligned = calculateAlignedObjects(userObjects, synonymsMapUpper);
 
-            // 5. Calculate alternatives aligned_as mapping
-            Map<String, List<String>> alignedAsMap = new LinkedHashMap<>();
-            for (String name : userObjects) {
-                List<String> altIds = new ArrayList<>();
-                for (Map.Entry<String, List<String>> entry : synonymsMapUpper.entrySet()) {
-                    String mainId = entry.getKey();
-                    List<String> synonymsList = entry.getValue();
-                    if (synonymsList.contains(name)) {
-                        if (!altIds.contains(mainId)) {
-                            altIds.add(mainId);
-                        }
-                    }
-                }
-                alignedAsMap.put(name, altIds);
-            }
+            Map<String, List<String>> invertedSynonyms = buildInvertedSynonymsIndex(synonymsMapUpper);
 
-            // 6. Calculate no_aligned objects (altIds list is empty)
-            List<String> noAligned = alignedAsMap.entrySet().stream()
-                    .filter(entry -> entry.getValue().isEmpty())
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
+            List<AlignedAs> alignedAsList = calculateAlignedAsList(userObjects, invertedSynonyms);
 
-            // 7. Filter aligned_as entries
-            List<AlignedAs> alignedAsList = new ArrayList<>();
-            for (Map.Entry<String, List<String>> entry : alignedAsMap.entrySet()) {
-                String expertName = entry.getKey();
-                List<String> altIds = entry.getValue();
-                if (altIds.size() == 1 && !altIds.get(0).equals(expertName)) {
-                    alignedAsList.add(new AlignedAs(expertName, altIds));
-                } else if (altIds.size() > 1) {
-                    alignedAsList.add(new AlignedAs(expertName, altIds));
-                }
-            }
+            List<String> noAligned = calculateNoAlignedObjects(userObjects, invertedSynonyms);
 
-            // 8. Calculate aligned_and_alternatives (union of aligned + all alternative IDs)
-            Set<String> alternativeIdsSet = new HashSet<>();
-            for (AlignedAs item : alignedAsList) {
-                alternativeIdsSet.addAll(item.alternativeIds());
-            }
+            List<String> alignedAndAlternatives = calculateAlignedAndAlternatives(aligned, alignedAsList);
 
-            Set<String> relatedObjects = new HashSet<>(aligned);
-            relatedObjects.addAll(alternativeIdsSet);
-            List<String> alignedAndAlternatives = new ArrayList<>(relatedObjects);
+            saveAlignedResult(pipelineId, aligned, noAligned, alignedAsList, alignedAndAlternatives);
 
-            // 9. Save AlignedResult to MongoDB
-            AlignedResult alignedResult = new AlignedResult(
-                    pipelineId,
-                    aligned,
-                    noAligned,
-                    alignedAsList,
-                    alignedAndAlternatives
-            );
+            notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId);
 
-            alignedResultRepository.save(alignedResult);
-            
-            // Notify config-and-control that the step is COMPLETED
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId);
-            
             log.info("Successfully completed expert objects alignment for pipelineId=[{}]", pipelineId);
 
         } catch (Exception e) {
             log.error("Fatal error during expert objects alignment for pipelineId=[{}]", pipelineId, e);
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
+            notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
             throw e;
         }
+    }
+
+    private List<BiologicalObject> fetchExpertObjects(String pipelineId) {
+        List<BiologicalObject> expertObjects = biologicalObjectsRepository.expertObjectsByPipelineAndLevel(pipelineId, EXPERT_LEVEL);
+        log.info("Fetched [{}] expert biological objects for pipelineId=[{}]", 
+                expertObjects != null ? expertObjects.size() : 0, pipelineId);
+        return expertObjects != null ? expertObjects : Collections.emptyList();
+    }
+
+    private Map<String, List<String>> fetchSynonyms(String pipelineId) {
+        Map<String, List<String>> synonymsMap = synonymRepository.findAllByPipelineId(pipelineId);
+        log.info("Fetched synonyms dictionary with [{}] entries for pipelineId=[{}]", 
+                synonymsMap != null ? synonymsMap.size() : 0, pipelineId);
+        return synonymsMap != null ? synonymsMap : Collections.emptyMap();
+    }
+
+    private List<String> getNormalizedUserObjects(List<BiologicalObject> expertObjects) {
+        return expertObjects.stream()
+                .map(BiologicalObject::name)
+                .filter(name -> name != null && !name.trim().isEmpty())
+                .map(String::toUpperCase)
+                .distinct()
+                .toList();
+    }
+
+    private Map<String, List<String>> getNormalizedSynonyms(Map<String, List<String>> synonymsMap) {
+        return synonymsMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().toUpperCase(),
+                        entry -> entry.getValue().stream()
+                                .filter(syn -> syn != null && !syn.trim().isEmpty())
+                                .map(String::toUpperCase)
+                                .distinct()
+                                .toList(),
+                        (v1, v2) -> {
+                            List<String> merged = new ArrayList<>(v1);
+                            merged.addAll(v2);
+                            return merged.stream().distinct().toList();
+                        }
+                ));
+    }
+
+    private List<String> calculateAlignedObjects(List<String> userObjects, Map<String, List<String>> synonymsMapUpper) {
+        return userObjects.stream()
+                .filter(synonymsMapUpper::containsKey)
+                .toList();
+    }
+
+    private Map<String, List<String>> buildInvertedSynonymsIndex(Map<String, List<String>> synonymsMapUpper) {
+        Map<String, List<String>> inverted = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : synonymsMapUpper.entrySet()) {
+            String mainId = entry.getKey();
+            for (String synonym : entry.getValue()) {
+                inverted.computeIfAbsent(synonym, k -> new ArrayList<>()).add(mainId);
+            }
+        }
+        return inverted;
+    }
+
+    private List<AlignedAs> calculateAlignedAsList(List<String> userObjects, Map<String, List<String>> invertedSynonyms) {
+        List<AlignedAs> alignedAsList = new ArrayList<>();
+        for (String name : userObjects) {
+            List<String> altIds = invertedSynonyms.getOrDefault(name, Collections.emptyList());
+            if (!altIds.isEmpty()) {
+                if (altIds.size() > 1 || (altIds.size() == 1 && !altIds.get(0).equals(name))) {
+                    alignedAsList.add(new AlignedAs(name, altIds));
+                }
+            }
+        }
+        return alignedAsList;
+    }
+
+    private List<String> calculateNoAlignedObjects(List<String> userObjects, Map<String, List<String>> invertedSynonyms) {
+        return userObjects.stream()
+                .filter(name -> !invertedSynonyms.containsKey(name) || invertedSynonyms.get(name).isEmpty())
+                .toList();
+    }
+
+    private List<String> calculateAlignedAndAlternatives(List<String> aligned, List<AlignedAs> alignedAsList) {
+        Set<String> relatedObjects = new HashSet<>(aligned);
+        for (AlignedAs item : alignedAsList) {
+            relatedObjects.addAll(item.alternativeIds());
+        }
+        return new ArrayList<>(relatedObjects);
+    }
+
+    private void saveAlignedResult(
+            String pipelineId,
+            List<String> aligned,
+            List<String> noAligned,
+            List<AlignedAs> alignedAsList,
+            List<String> alignedAndAlternatives
+    ) {
+        AlignedResult alignedResult = new AlignedResult(
+                pipelineId,
+                aligned,
+                noAligned,
+                alignedAsList,
+                alignedAndAlternatives
+        );
+        alignedResultRepository.save(alignedResult);
+    }
+
+    private void notifyStatus(String pipelineId, PipelineSteps step, Status status, String userId) {
+        configAndControlRepository.updateStep(pipelineId, step, status, userId);
     }
 }
