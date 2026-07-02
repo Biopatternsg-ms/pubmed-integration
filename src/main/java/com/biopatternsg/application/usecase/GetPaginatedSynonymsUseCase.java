@@ -13,26 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.domain.model.PipelineSynonym;
+import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
+import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-import java.util.Map;
+@ApplicationScoped
+@RequiredArgsConstructor
+public class GetPaginatedSynonymsUseCase implements GetPaginatedSynonyms {
 
-public interface SynonymRepository {
-    /**
-     * Persists synonym information to the MongoDB collection.
-     * If the document (pipelineId, name) exists, appends the new synonyms (preventing duplicates).
-     * If it does not exist, creates the document.
-     */
-    void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms);
+    private final SynonymRepository synonymRepository;
 
-    /**
-     * Retrieves all synonyms for a given pipelineId, mapped by their name (main ID).
-     */
-    Map<String, List<String>> findAllByPipelineId(String pipelineId);
-
-    PaginatedResult<PipelineSynonym> findByPipelineId(String pipelineId, int page, int size);
+    @Override
+    public PaginatedResult<PipelineSynonym> execute(String pipelineId, int page, int size) {
+        return synonymRepository.findByPipelineId(pipelineId, page, size);
+    }
 }

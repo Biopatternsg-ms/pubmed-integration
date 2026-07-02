@@ -20,14 +20,19 @@ import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
+import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +53,7 @@ public class PubmedController {
     private final SearchPubtatorByPmids searchPubtatorByPmids;
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
+    private final GetPaginatedSynonyms getPaginatedSynonyms;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -152,6 +158,18 @@ public class PubmedController {
         return Response.accepted()
                 .entity("{\"message\": \"Aligned objects generation started\"}")
                 .build();
+    }
+
+    @GET
+    @Path("/synonyms/{pipelineId}")
+    public Response getSynonyms(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
+        var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
+        return Response.ok(paginatedResult).build();
     }
 
 }
