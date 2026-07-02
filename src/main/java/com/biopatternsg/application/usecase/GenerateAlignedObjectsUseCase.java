@@ -25,6 +25,7 @@ import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
+import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +95,7 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
         } catch (Exception e) {
             log.error("Fatal error during expert objects alignment for pipelineId=[{}]", pipelineId, e);
             notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
-            throw e;
+            throw new InternalServerError(e);
         }
     }
 
