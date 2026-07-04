@@ -15,6 +15,8 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
+import com.biopatternsg.domain.model.PaginatedResult;
+import com.biopatternsg.domain.model.PipelineSynonym;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
 import com.biopatternsg.mongo.SynonymCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
@@ -75,6 +77,25 @@ public class SynonymRepositoryAdapter implements SynonymRepository, PanacheMongo
                     ));
         } catch (Exception e) {
             log.error("Error finding all synonyms for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
+    public PaginatedResult<PipelineSynonym> findByPipelineId(String pipelineId, int page, int size) {
+        try {
+            var query = find("pipelineId", pipelineId);
+            long totalItems = query.count();
+            int totalPages = (int) Math.ceil((double) totalItems / size);
+
+            List<PipelineSynonym> items = query.page(page, size)
+                    .stream()
+                    .map(col -> new PipelineSynonym(col.getName(), col.getSynonyms()))
+                    .collect(Collectors.toList());
+
+            return new PaginatedResult<>(items, totalItems, totalPages, page, size);
+        } catch (Exception e) {
+            log.error("Error finding paginated synonyms for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
