@@ -29,9 +29,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -139,17 +143,10 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
         return resultado;
     }
     
-    private List<String> getTerms(BiologicalObject biologicalObject, boolean useOnlyPrincipalName) {
-
-        List<String> terms = new ArrayList<>();
-        Optional.ofNullable(biologicalObject.name()).ifPresent(terms::add);
-        Optional.ofNullable(biologicalObject.symbol()).ifPresent(terms::add);
-
-        if (!useOnlyPrincipalName && biologicalObject.synonyms() != null) {
-            biologicalObject.synonyms().stream().filter(Objects::nonNull).forEach(terms::add);
-        }
-
-        return terms;
+    private List<String> getTerms(BiologicalObject obj, boolean useOnlyPrincipalName) {
+        return useOnlyPrincipalName
+                ? Stream.of(obj.name(), obj.symbol()).filter(java.util.Objects::nonNull).toList()
+                : obj.allTerms();
     }
 
     private Set<Pair<String, String>> getBiologicalObjectPairs(List<String> biologicalObjectIds) {
