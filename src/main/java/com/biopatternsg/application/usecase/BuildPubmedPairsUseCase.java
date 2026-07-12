@@ -25,8 +25,8 @@ import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.mongo.PairsCollection;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
@@ -38,15 +38,27 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
-@RequiredArgsConstructor
 @ApplicationScoped
 public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
 
     private final BiologicalObjectsService biologicalObjectsService;
     private final PairRepository pairRepository;
     private final ConfigAndControlRepository configAndControlRepository;
+    private final int maxSynonyms;
+
     private static final int FIRST_LEVEL = 1;
     private static final int SECOND_LEVEL = 2;
+
+    public BuildPubmedPairsUseCase(
+            BiologicalObjectsService biologicalObjectsService,
+            PairRepository pairRepository,
+            ConfigAndControlRepository configAndControlRepository,
+            @ConfigProperty(name = "pubmed.max-synonyms-per-object", defaultValue = "10") int maxSynonyms) {
+        this.biologicalObjectsService = biologicalObjectsService;
+        this.pairRepository = pairRepository;
+        this.configAndControlRepository = configAndControlRepository;
+        this.maxSynonyms = maxSynonyms;
+    }
 
     @Override
     public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels, String userId) {
@@ -146,7 +158,7 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
     private List<String> getTerms(BiologicalObject obj, boolean useOnlyPrincipalName) {
         return useOnlyPrincipalName
                 ? Stream.of(obj.name(), obj.symbol()).filter(java.util.Objects::nonNull).toList()
-                : obj.allTerms();
+                : obj.allTerms(maxSynonyms);
     }
 
     private Set<Pair<String, String>> getBiologicalObjectPairs(List<String> biologicalObjectIds) {

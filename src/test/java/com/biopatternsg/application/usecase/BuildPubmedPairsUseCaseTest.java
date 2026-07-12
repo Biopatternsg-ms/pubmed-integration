@@ -71,7 +71,7 @@ class BuildPubmedPairsUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new BuildPubmedPairsUseCase(biologicalObjectsService, pairRepository, configAndControlRepository);
+        useCase = new BuildPubmedPairsUseCase(biologicalObjectsService, pairRepository, configAndControlRepository, 10);
         doNothing().when(pairRepository).deleteByPipelineId(anyString());
         doNothing().when(configAndControlRepository).updateStep(anyString(), any(), any(), anyString());
     }
@@ -257,6 +257,37 @@ class BuildPubmedPairsUseCaseTest {
                             pair("BR1",   "TP53"),
                             pair("breast cancer 1", "TP53")
                     );
+        }
+
+        @Test
+        @DisplayName("Configured maxSynonyms limit is respected → limits number of synonyms used in pair generation")
+        void maxSynonymsConfigured_limitsSynonymsUsed() {
+            // A custom usecase with maxSynonyms = 1
+            BuildPubmedPairsUseCase customUseCase = new BuildPubmedPairsUseCase(
+                    biologicalObjectsService, pairRepository, configAndControlRepository, 1);
+
+            BiologicalObject objA = new BiologicalObject("id-A", "BRCA1", "BR1",
+                    List.of("syn1", "syn2", "syn3"));
+            BiologicalObject objB = new BiologicalObject("id-B", "TP53", null, null);
+
+            when(biologicalObjectsService.getBiologicalObjectsByLevel(PIPELINE_ID, 1))
+                    .thenReturn(List.of(objA, objB));
+
+            customUseCase.execute(PIPELINE_ID, false, 1, USER_ID);
+
+            // With maxSynonyms=1, A should only use: BRCA1, BR1, and "syn1".
+            // So we expect 3 pairs: BRCA1|TP53, BR1|TP53, syn1|TP53.
+            Set<String> savedPairs = captureAllSavedPairs();
+
+            assertThat(savedPairs)
+                    .hasSize(3)
+                    .containsExactlyInAnyOrder(
+                            pair("BRCA1", "TP53"),
+                            pair("BR1",   "TP53"),
+                            pair("syn1",  "TP53")
+                    )
+                    .doesNotContain(pair("syn2", "TP53"))
+                    .doesNotContain(pair("syn3", "TP53"));
         }
     }
 

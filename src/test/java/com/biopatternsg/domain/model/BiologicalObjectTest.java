@@ -97,5 +97,24 @@ class BiologicalObjectTest {
 
         assertThat(obj.allTerms())
                 .containsExactly("BRCA1", "BR1", "brca1", "other");
+     }
+
+    @Test
+    @DisplayName("9. allTerms(maxSynonyms) with positive limit → returns up to limit synonyms")
+    void allTermsWithLimit_returnsUpToLimitSynonyms() {
+        var obj = new BiologicalObject("id", "BRCA1", "BR1", List.of("syn1", "syn2", "syn3"));
+
+        // Name + Symbol are always included, synonyms should be limited to 2
+        assertThat(obj.allTerms(2))
+                .containsExactly("BRCA1", "BR1", "syn1", "syn2");
+    }
+
+    @Test
+    @DisplayName("10. allTerms(maxSynonyms) with zero limit → returns only name and symbol")
+    void allTermsWithZeroLimit_returnsOnlyNameAndSymbol() {
+        var obj = new BiologicalObject("id", "BRCA1", "BR1", List.of("syn1", "syn2"));
+
+        assertThat(obj.allTerms(0))
+                .containsExactly("BRCA1", "BR1");
     }
 }
