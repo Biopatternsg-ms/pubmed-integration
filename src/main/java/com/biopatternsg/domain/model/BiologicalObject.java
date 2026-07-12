@@ -32,10 +32,23 @@ public record BiologicalObject(
      * Uses LinkedHashSet to guarantee insertion-order uniqueness.
      */
     public List<String> allTerms() {
+        return allTerms(Integer.MAX_VALUE);
+    }
+
+    /**
+     * Returns a deduplicated, ordered list of all terms that identify this biological object,
+     * limiting the number of processed synonyms to maxSynonyms.
+     */
+    public List<String> allTerms(int maxSynonyms) {
         var set = new LinkedHashSet<String>();
         if (name != null)     set.add(name);
         if (symbol != null)   set.add(symbol);
-        if (synonyms != null) synonyms.stream().filter(Objects::nonNull).forEach(set::add);
+        if (synonyms != null) {
+            synonyms.stream()
+                    .filter(Objects::nonNull)
+                    .limit(maxSynonyms)
+                    .forEach(set::add);
+        }
         return new ArrayList<>(set);
     }
 }
