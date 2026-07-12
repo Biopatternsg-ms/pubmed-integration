@@ -21,6 +21,7 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
@@ -44,6 +45,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
     private final KbEventRepository kbEventRepository;
     private final ConfigAndControlRepository configAndControlRepository;
     private final SynonymRepository synonymRepository;
+    private final PubmedResultRepository pubmedResultRepository;
 
     @Inject
     public GenerateKbForPipelineUseCase(
@@ -52,7 +54,8 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb,
             KbEventRepository kbEventRepository,
             ConfigAndControlRepository configAndControlRepository,
-            SynonymRepository synonymRepository
+            SynonymRepository synonymRepository,
+            PubmedResultRepository pubmedResultRepository
     ) {
         this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
         this.pubtatorResultRepository = pubtatorResultRepository;
@@ -60,6 +63,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         this.kbEventRepository = kbEventRepository;
         this.configAndControlRepository = configAndControlRepository;
         this.synonymRepository = synonymRepository;
+        this.pubmedResultRepository = pubmedResultRepository;
     }
 
     @Override
@@ -130,6 +134,9 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
             log.info("Finished knowledge base generation pipeline for pipelineId=[{}]. Results: Success=[{}], NotFound=[{}], Errors=[{}]",
                     pipelineId, successCount.get(), notFoundCount.get(), errorCount.get());
+
+            pubmedResultRepository.deleteByPipelineId(pipelineId);
+            log.info("Successfully deleted processed pubmed_results for pipelineId=[{}]", pipelineId);
 
             configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId);
         } catch (Exception e) {

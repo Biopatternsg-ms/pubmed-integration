@@ -17,4 +17,5 @@ package com.biopatternsg.domain.ports.out.repositories;
 
 public interface PubmedResultRepository {
     void save(String pipelineId, String pubmedId);
+    void deleteByPipelineId(String pipelineId);
 }

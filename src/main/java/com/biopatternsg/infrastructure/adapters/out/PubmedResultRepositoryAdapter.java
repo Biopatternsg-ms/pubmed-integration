@@ -39,4 +39,13 @@ public class PubmedResultRepositoryAdapter implements PubmedResultRepository, Pa
             }
         }
     }
+
+    @Override
+    public void deleteByPipelineId(String pipelineId) {
+        try {
+            delete("pipelineId", pipelineId);
+        } catch (Exception e) {
+            throw new InternalServerError(e);
+        }
+    }
 }
