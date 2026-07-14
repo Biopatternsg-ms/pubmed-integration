@@ -15,7 +15,10 @@
  */
 package com.biopatternsg.domain.model;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 
 public record BiologicalObject(
         String id,
@@ -23,4 +26,29 @@ public record BiologicalObject(
         String symbol,
         List<String> synonyms
 ) {
+    /**
+     * Returns a deduplicated, ordered list of all terms that identify this biological object:
+     * name first, then symbol, then synonyms — excluding nulls and repeated values.
+     * Uses LinkedHashSet to guarantee insertion-order uniqueness.
+     */
+    public List<String> allTerms() {
+        return allTerms(Integer.MAX_VALUE);
+    }
+
+    /**
+     * Returns a deduplicated, ordered list of all terms that identify this biological object,
+     * limiting the number of processed synonyms to maxSynonyms.
+     */
+    public List<String> allTerms(int maxSynonyms) {
+        var set = new LinkedHashSet<String>();
+        if (name != null)     set.add(name);
+        if (symbol != null)   set.add(symbol);
+        if (synonyms != null) {
+            synonyms.stream()
+                    .filter(Objects::nonNull)
+                    .limit(maxSynonyms)
+                    .forEach(set::add);
+        }
+        return new ArrayList<>(set);
+    }
 }

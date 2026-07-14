@@ -17,6 +17,7 @@ package archtest;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import com.tngtech.archunit.library.Architectures;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,9 @@ class ArchitectureLayerTest {
 
     @BeforeEach
     void init() {
-        this.javaClasses = new ClassFileImporter().importPackages(ROOT);
+        this.javaClasses = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages(ROOT);
     }
 
     @DisplayName("The class in the layer applications should only used for others class by the same layer")

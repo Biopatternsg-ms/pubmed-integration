@@ -24,6 +24,10 @@ public record PubtatorResult(
         List<PubtatorObject> objects,
         List<PubtatorEvent> events
 ) {
+    public boolean hasEvents() {
+        return events != null && !events.isEmpty();
+    }
+
     public record PubtatorObject(
             String identifier,
             String accession,

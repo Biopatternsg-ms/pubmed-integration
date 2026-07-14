@@ -61,9 +61,12 @@ public class PubtatorRabbitConsumer {
 
                 String responseJson = pubtatorSearchRepoWeb.search(pmidsToFetch);
                 List<PubtatorResult> docs = pubtatorResponseParser.parse(responseJson);
+                List<PubtatorResult> docsWithEvents = docs.stream()
+                        .filter(PubtatorResult::hasEvents)
+                        .toList();
 
-                if (!docs.isEmpty()) {
-                    pubtatorResultRepository.saveAll(docs);
+                if (!docsWithEvents.isEmpty()) {
+                    pubtatorResultRepository.saveAll(docsWithEvents);
                 }
             } else {
                 log.info("[{}/{}] All {} PMIDs already cached. Skipping API call.",
