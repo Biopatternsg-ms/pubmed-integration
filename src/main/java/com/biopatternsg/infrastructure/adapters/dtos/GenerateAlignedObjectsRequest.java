@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
 import com.biopatternsg.domain.model.ExpertObjectConfig;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-public interface GenerateAlignedObjects {
-    void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId);
+public record GenerateAlignedObjectsRequest(
+        @NotBlank String pipelineId,
+        @NotNull List<ExpertObjectConfig> expertObjects
+) {
 }

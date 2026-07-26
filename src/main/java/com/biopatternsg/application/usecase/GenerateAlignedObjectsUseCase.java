@@ -17,14 +17,13 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.AlignedAs;
 import com.biopatternsg.domain.model.AlignedResult;
-import com.biopatternsg.domain.model.BiologicalObject;
+import com.biopatternsg.domain.model.ExpertObjectConfig;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
-import com.biopatternsg.domain.ports.out.external_repositories.BiologicalObjectsRepository;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
-import com.biopatternsg.domain.model.PipelineSteps;
-import com.biopatternsg.domain.model.Status;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -43,36 +42,31 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
 
-    private static final int EXPERT_LEVEL = 2;
-
-    private final BiologicalObjectsRepository biologicalObjectsRepository;
     private final SynonymRepository synonymRepository;
     private final AlignedResultRepository alignedResultRepository;
     private final ConfigAndControlRepository configAndControlRepository;
 
     @Inject
     public GenerateAlignedObjectsUseCase(
-            BiologicalObjectsRepository biologicalObjectsRepository,
             SynonymRepository synonymRepository,
             AlignedResultRepository alignedResultRepository,
             ConfigAndControlRepository configAndControlRepository
     ) {
-        this.biologicalObjectsRepository = biologicalObjectsRepository;
         this.synonymRepository = synonymRepository;
         this.alignedResultRepository = alignedResultRepository;
         this.configAndControlRepository = configAndControlRepository;
     }
 
     @Override
-    public void execute(String pipelineId, String userId) {
-        log.info("Starting expert objects alignment for pipelineId=[{}]", pipelineId);
+    public void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId) {
+        log.info("Starting expert objects alignment for pipelineId=[{}] with [{}] expert objects",
+                pipelineId, expertObjects != null ? expertObjects.size() : 0);
 
         try {
-
-            List<BiologicalObject> expertObjects = fetchExpertObjects(pipelineId);
+            List<ExpertObjectConfig> safeExpertObjects = expertObjects != null ? expertObjects : Collections.emptyList();
             Map<String, List<String>> synonymsMap = fetchSynonyms(pipelineId);
 
-            List<String> userObjects = getNormalizedUserObjects(expertObjects);
+            List<String> userObjects = getNormalizedUserObjects(safeExpertObjects);
 
             Map<String, List<String>> synonymsMapUpper = getNormalizedSynonyms(synonymsMap);
 
@@ -99,13 +93,6 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
         }
     }
 
-    private List<BiologicalObject> fetchExpertObjects(String pipelineId) {
-        List<BiologicalObject> expertObjects = biologicalObjectsRepository.expertObjectsByPipelineAndLevel(pipelineId, EXPERT_LEVEL);
-        log.info("Fetched [{}] expert biological objects for pipelineId=[{}]", 
-                expertObjects != null ? expertObjects.size() : 0, pipelineId);
-        return expertObjects != null ? expertObjects : Collections.emptyList();
-    }
-
     private Map<String, List<String>> fetchSynonyms(String pipelineId) {
         Map<String, List<String>> synonymsMap = synonymRepository.findAllByPipelineId(pipelineId);
         log.info("Fetched synonyms dictionary with [{}] entries for pipelineId=[{}]", 
@@ -113,10 +100,10 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
         return synonymsMap != null ? synonymsMap : Collections.emptyMap();
     }
 
-    private List<String> getNormalizedUserObjects(List<BiologicalObject> expertObjects) {
+    private List<String> getNormalizedUserObjects(List<ExpertObjectConfig> expertObjects) {
         return expertObjects.stream()
-                .map(BiologicalObject::name)
-                .filter(name -> name != null && !name.trim().isEmpty())
+                .map(ExpertObjectConfig::symbol)
+                .filter(symbol -> symbol != null && !symbol.trim().isEmpty())
                 .map(String::toUpperCase)
                 .distinct()
                 .toList();

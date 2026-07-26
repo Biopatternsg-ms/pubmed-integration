@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.domain.model;
 
-import com.biopatternsg.domain.model.ExpertObjectConfig;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.List;
-
-public interface GenerateAlignedObjects {
-    void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId);
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record ExpertObjectConfig(
+        String uniprotId,
+        String hgncId,
+        String symbol
+) {
 }
