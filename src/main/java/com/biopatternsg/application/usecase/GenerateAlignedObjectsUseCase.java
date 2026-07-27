@@ -59,8 +59,8 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
 
     @Override
     public void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId) {
-        log.info("Starting expert objects alignment for pipelineId=[{}] with [{}] expert objects",
-                pipelineId, expertObjects != null ? expertObjects.size() : 0);
+        log.info("Starting expert objects alignment for pipelineId=[{}] with [{}] expert objects [{}]",
+                pipelineId, expertObjects.size(), expertObjects.stream().map(ExpertObjectConfig::symbol));
 
         try {
             List<ExpertObjectConfig> safeExpertObjects = expertObjects != null ? expertObjects : Collections.emptyList();
