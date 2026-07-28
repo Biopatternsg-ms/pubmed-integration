@@ -138,7 +138,13 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             pubmedResultRepository.deleteByPipelineId(pipelineId);
             log.info("Successfully deleted processed pubmed_results for pipelineId=[{}]", pipelineId);
 
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId);
+            java.util.Map<String, String> metrics = java.util.Map.of(
+                    "kbEventsGenerated", String.valueOf(successCount.get()),
+                    "pmidsProcessed", String.valueOf(allPmids.size()),
+                    "pmidsWithErrors", String.valueOf(errorCount.get())
+            );
+
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, metrics);
         } catch (Exception e) {
             log.error("Fatal error during KB generation for pipelineId=[{}]", pipelineId, e);
             configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId);

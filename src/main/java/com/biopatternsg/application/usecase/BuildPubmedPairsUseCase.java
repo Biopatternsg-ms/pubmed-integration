@@ -74,7 +74,13 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
 
         log.info("Generated unique pairs FINISHED");
 
-        configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId);
+        long totalPairs = pairRepository.findByPipelineId(pipelineId).stream()
+                .filter(c -> c.getPairs() != null)
+                .mapToLong(c -> c.getPairs().size())
+                .sum();
+
+        configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId,
+                java.util.Map.of("combinationsGenerated", String.valueOf(totalPairs)));
     }
 
     private void processHigherLevel(String pipelineId, boolean useOnlyPrincipalName, int level) {

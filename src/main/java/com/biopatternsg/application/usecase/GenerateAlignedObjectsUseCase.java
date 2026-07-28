@@ -82,7 +82,12 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
 
             saveAlignedResult(pipelineId, aligned, noAligned, alignedAsList, alignedAndAlternatives);
 
-            notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId);
+            java.util.Map<String, String> metrics = java.util.Map.of(
+                    "alignedObjects", String.valueOf(aligned.size()),
+                    "notAlignedObjects", String.valueOf(noAligned.size())
+            );
+
+            notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId, metrics);
 
             log.info("Successfully completed expert objects alignment for pipelineId=[{}]", pipelineId);
 
@@ -188,6 +193,10 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     }
 
     private void notifyStatus(String pipelineId, PipelineSteps step, Status status, String userId) {
-        configAndControlRepository.updateStep(pipelineId, step, status, userId);
+        notifyStatus(pipelineId, step, status, userId, null);
+    }
+
+    private void notifyStatus(String pipelineId, PipelineSteps step, Status status, String userId, java.util.Map<String, String> metrics) {
+        configAndControlRepository.updateStep(pipelineId, step, status, userId, metrics);
     }
 }

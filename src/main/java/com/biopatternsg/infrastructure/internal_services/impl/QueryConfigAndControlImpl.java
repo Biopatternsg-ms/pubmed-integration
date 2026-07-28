@@ -35,6 +35,11 @@ public class QueryConfigAndControlImpl implements QueryConfigAndControl {
 
     @Override
     public void updateStep(String pipelineId, String step, String status, String userId) {
-        configAndControlHttpClient.updateStep(new PipelineStepRequest(pipelineId, step, status), userId);
+        updateStep(pipelineId, step, status, userId, null);
+    }
+
+    @Override
+    public void updateStep(String pipelineId, String step, String status, String userId, java.util.Map<String, String> metrics) {
+        configAndControlHttpClient.updateStep(new PipelineStepRequest(pipelineId, step, status, metrics), userId);
     }
 }
