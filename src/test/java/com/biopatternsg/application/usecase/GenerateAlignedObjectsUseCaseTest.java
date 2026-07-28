@@ -88,7 +88,7 @@ class GenerateAlignedObjectsUseCaseTest {
         assertThat(savedResult.aligned()).containsExactlyInAnyOrder("TP53", "BRCA1");
         assertThat(savedResult.noAligned()).containsExactlyInAnyOrder("KRAS");
 
-        verify(configAndControlRepository).updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId);
+        verify(configAndControlRepository).updateStep(eq(pipelineId), eq(PipelineSteps.GENERATE_ALIGNED_OBJECTS), eq(Status.COMPLETED), eq(userId), any());
     }
 
     @Test
@@ -104,6 +104,6 @@ class GenerateAlignedObjectsUseCaseTest {
         assertThatThrownBy(() -> generateAlignedObjectsUseCase.execute(pipelineId, expertObjects, userId))
                 .isInstanceOf(InternalServerError.class);
 
-        verify(configAndControlRepository).updateStep(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
+        verify(configAndControlRepository).updateStep(eq(pipelineId), eq(PipelineSteps.GENERATE_ALIGNED_OBJECTS), eq(Status.FAILED), eq(userId), any());
     }
 }

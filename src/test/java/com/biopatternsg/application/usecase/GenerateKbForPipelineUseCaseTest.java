@@ -111,10 +111,11 @@ class GenerateKbForPipelineUseCaseTest {
         verify(synonymRepository, times(1)).saveSynonyms(PIPELINE_ID, synonymsMap);
         verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
         verify(configAndControlRepository, times(1)).updateStep(
-                PIPELINE_ID,
-                PipelineSteps.BUILD_KNOWLEDGE_BASE,
-                Status.COMPLETED,
-                USER_ID
+                eq(PIPELINE_ID),
+                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
+                eq(Status.COMPLETED),
+                eq(USER_ID),
+                any()
         );
     }
 
@@ -131,10 +132,11 @@ class GenerateKbForPipelineUseCaseTest {
         // Assert
         verifyNoInteractions(pubtatorResultRepository, buildKnowledgeBaseRepoWeb, synonymRepository, pubmedResultRepository);
         verify(configAndControlRepository, times(1)).updateStep(
-                PIPELINE_ID,
-                PipelineSteps.BUILD_KNOWLEDGE_BASE,
-                Status.COMPLETED,
-                USER_ID
+                eq(PIPELINE_ID),
+                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
+                eq(Status.COMPLETED),
+                eq(USER_ID),
+                any()
         );
     }
 
@@ -150,10 +152,11 @@ class GenerateKbForPipelineUseCaseTest {
 
         // Assert
         verify(configAndControlRepository, times(1)).updateStep(
-                PIPELINE_ID,
-                PipelineSteps.BUILD_KNOWLEDGE_BASE,
-                Status.FAILED,
-                USER_ID
+                eq(PIPELINE_ID),
+                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
+                eq(Status.FAILED),
+                eq(USER_ID),
+                any()
         );
     }
 }

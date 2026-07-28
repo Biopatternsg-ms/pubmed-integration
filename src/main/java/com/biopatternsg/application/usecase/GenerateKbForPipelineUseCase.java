@@ -81,7 +81,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
             if (allPmids.isEmpty()) {
                 log.warn("No valid numeric PMIDs found for pipelineId=[{}]. Aborting KB generation.", pipelineId);
-                configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId);
+                configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, null);
                 return;
             }
 
@@ -147,7 +147,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, metrics);
         } catch (Exception e) {
             log.error("Fatal error during KB generation for pipelineId=[{}]", pipelineId, e);
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId);
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId, null);
         }
     }
 
