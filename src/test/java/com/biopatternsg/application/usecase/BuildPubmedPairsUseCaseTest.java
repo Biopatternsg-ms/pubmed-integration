@@ -73,7 +73,7 @@ class BuildPubmedPairsUseCaseTest {
     void setUp() {
         useCase = new BuildPubmedPairsUseCase(biologicalObjectsService, pairRepository, configAndControlRepository, 10);
         doNothing().when(pairRepository).deleteByPipelineId(anyString());
-        doNothing().when(configAndControlRepository).updateStep(anyString(), any(), any(), anyString());
+        doNothing().when(configAndControlRepository).updateStep(anyString(), any(), any(), anyString(), any());
     }
 
     // =========================================================================
@@ -387,7 +387,8 @@ class BuildPubmedPairsUseCaseTest {
                     eq(PIPELINE_ID),
                     eq(com.biopatternsg.domain.model.PipelineSteps.COMBINATIONS),
                     eq(com.biopatternsg.domain.model.Status.COMPLETED),
-                    eq(USER_ID)
+                    eq(USER_ID),
+                    any()
             );
         }
     }

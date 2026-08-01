@@ -32,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
+import java.util.List;
+
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ public class NcbiRabbitConsumer {
     private final PairRepository pairRepository;
     private final ConfigAndControlRepository configAndControlRepository;
     private final SearchProgressRepository searchProgressRepository;
+    private final com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
 
     @Incoming("ncbi-in")
     @Blocking(ordered = false)
@@ -63,7 +66,15 @@ public class NcbiRabbitConsumer {
                 pairRepository.deleteByPipelineId(request.pipelineId());
                 log.info("Successfully deleted processed pairs for pipelineId=[{}] from database (all [{}] terms processed)", request.pipelineId(), progress.getTotalCount());
 
-                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId());
+                List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(request.pipelineId());
+                long uniquePmids = rawPmids != null ? rawPmids.stream().filter(id -> id != null && id.trim().matches("\\d+")).distinct().count() : 0;
+
+                java.util.Map<String, String> metrics = java.util.Map.of(
+                        "pubmedIdsFound", String.valueOf(uniquePmids),
+                        "pairsSearched", String.valueOf(progress.getTotalCount())
+                );
+
+                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId(), metrics);
                 searchProgressRepository.deleteByPipelineId(request.pipelineId());
             }
         }

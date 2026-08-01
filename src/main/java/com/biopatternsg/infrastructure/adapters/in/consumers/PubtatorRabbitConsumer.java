@@ -21,6 +21,7 @@ import com.biopatternsg.domain.model.PubtatorSearchRequest;
 import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.external_repositories.PubtatorSearchRepoWeb;
+import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorSearchProgressRepository;
 import com.biopatternsg.mongo.PubtatorSearchProgressCollection;
@@ -31,8 +32,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -45,6 +48,7 @@ public class PubtatorRabbitConsumer {
     private final ConfigAndControlRepository configAndControlRepository;
     private final PubtatorSearchProgressRepository pubtatorSearchProgressRepository;
     private final PubtatorResponseParser pubtatorResponseParser;
+    private final PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
 
     @Incoming("pubtator-in")
     @Blocking(ordered = false)
@@ -53,12 +57,11 @@ public class PubtatorRabbitConsumer {
 
         try {
             List<String> pmidsToFetch = filterUncachedPmids(request.pmids());
+            log.info("[{}/{}] PubTator processing batch of [{}] PMIDs (uncached: [{}]) for pipelineId=[{}]",
+                    request.batchIndex(), request.batchesTotal(),
+                    request.pmids().size(), pmidsToFetch.size(), request.pipelineId());
 
             if (!pmidsToFetch.isEmpty()) {
-                log.info("[{}/{}] Fetching {} PMIDs from PubTator API (already cached: {})",
-                        request.batchIndex(), request.batchesTotal(),
-                        pmidsToFetch.size(), request.pmids().size() - pmidsToFetch.size());
-
                 String responseJson = pubtatorSearchRepoWeb.search(pmidsToFetch);
                 List<PubtatorResult> docs = pubtatorResponseParser.parse(responseJson);
                 List<PubtatorResult> docsWithEvents = docs.stream()
@@ -68,14 +71,7 @@ public class PubtatorRabbitConsumer {
                 if (!docsWithEvents.isEmpty()) {
                     pubtatorResultRepository.saveAll(docsWithEvents);
                 }
-            } else {
-                log.info("[{}/{}] All {} PMIDs already cached. Skipping API call.",
-                        request.batchIndex(), request.batchesTotal(), request.pmids().size());
             }
-
-            log.info("[{}/{}] PubTator batch processed successfully for pipelineId=[{}]",
-                    request.batchIndex(), request.batchesTotal(), request.pipelineId());
-
         } catch (Exception e) {
             log.error("[{}/{}] Error processing PubTator batch for pipelineId=[{}]: {}",
                     request.batchIndex(), request.batchesTotal(),
@@ -100,11 +96,23 @@ public class PubtatorRabbitConsumer {
             log.info("All PubTator batches completed for pipelineId=[{}] ([{}] batches)",
                     request.pipelineId(), progress.getTotalCount());
 
+            List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(request.pipelineId());
+            int totalPmids = rawPmids != null ? rawPmids.size() : 0;
+            List<String> existingInPubtator = totalPmids > 0 ? pubtatorResultRepository.findExistingPmids(rawPmids) : Collections.emptyList();
+            int annotatedPmids = existingInPubtator != null ? existingInPubtator.size() : 0;
+            int notFoundPmids = Math.max(0, totalPmids - annotatedPmids);
+
+            Map<String, String> metrics = Map.of(
+                    "pmidsAnnotated", String.valueOf(annotatedPmids),
+                    "pmidsNotFound", String.valueOf(notFoundPmids)
+            );
+
             configAndControlRepository.updateStep(
                     request.pipelineId(),
                     PipelineSteps.SEARCH_PUBTATOR,
                     Status.COMPLETED,
-                    request.userId()
+                    request.userId(),
+                    metrics
             );
             pubtatorSearchProgressRepository.deleteByPipelineId(request.pipelineId());
         }

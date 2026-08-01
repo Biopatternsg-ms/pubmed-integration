@@ -22,6 +22,7 @@ import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -143,13 +144,13 @@ public class PubmedController {
     @Path("/generate-aligned-objects")
     @ActivateRequestContext
     public Response generateAlignedObjects(
-            @Valid SearchPubtatorByPipelineRequest request
+            @Valid GenerateAlignedObjectsRequest request
     ) {
 
         String userId = sessionUtils.getUserId();
         CompletableFuture.runAsync(() -> {
             try {
-                generateAlignedObjects.execute(request.pipelineId(), userId);
+                generateAlignedObjects.execute(request.pipelineId(), request.expertObjects(), userId);
             } catch (Exception e) {
                 log.error("Error generating aligned objects", e);
             }

@@ -15,9 +15,12 @@
  */
 package com.biopatternsg.infrastructure.adapters.dtos;
 
+import java.util.Map;
+
 public record PipelineStepRequest(
         String id,
         String step,
-        String status
+        String status,
+        Map<String, String> metrics
 ) {
 }

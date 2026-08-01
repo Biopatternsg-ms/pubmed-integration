@@ -18,6 +18,9 @@ package com.biopatternsg.domain.ports.out.external_repositories;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
 
+import java.util.Map;
+
 public interface ConfigAndControlRepository {
     void updateStep(String pipelineId, PipelineSteps step, Status status, String userId);
+    void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics);
 }

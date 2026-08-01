@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.infrastructure.internal_services;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
-import java.util.Map;
+import com.biopatternsg.domain.model.ExpertObjectConfig;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-public interface QueryConfigAndControl {
-    void updateStep(String pipelineId, String step, String status, String userId);
-    void updateStep(String pipelineId, String step, String status, String userId, Map<String, String> metrics);
+import java.util.List;
+
+public record GenerateAlignedObjectsRequest(
+        @NotBlank String pipelineId,
+        @NotNull List<ExpertObjectConfig> expertObjects
+) {
 }

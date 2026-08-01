@@ -15,6 +15,10 @@
  */
 package com.biopatternsg.domain.ports.in;
 
+import com.biopatternsg.domain.model.ExpertObjectConfig;
+
+import java.util.List;
+
 public interface GenerateAlignedObjects {
-    void execute(String pipelineId, String userId);
+    void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId);
 }
