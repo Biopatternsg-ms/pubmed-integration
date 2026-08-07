@@ -107,8 +107,14 @@ public class SynonymRepositoryAdapter implements SynonymRepository, PanacheMongo
             if (name == null || name.isBlank()) {
                 return Optional.empty();
             }
-            var pattern = java.util.regex.Pattern.compile("^" + java.util.regex.Pattern.quote(name.trim()) + "$", java.util.regex.Pattern.CASE_INSENSITIVE);
-            return find("pipelineId = ?1 and name like ?2", pipelineId, pattern)
+            String cleanName = name.trim();
+            var exactResult = find("pipelineId = ?1 and name = ?2", pipelineId, cleanName).firstResultOptional();
+            if (exactResult.isPresent()) {
+                return exactResult.map(col -> new PipelineSynonym(col.getName(), col.getSynonyms()));
+            }
+
+            String regex = "^" + java.util.regex.Pattern.quote(cleanName) + "$";
+            return find("{'pipelineId': ?1, '$or': [{'name': {'$regex': ?2, '$options': 'i'}}, {'synonyms': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .firstResultOptional()
                     .map(col -> new PipelineSynonym(col.getName(), col.getSynonyms()));
         } catch (Exception e) {

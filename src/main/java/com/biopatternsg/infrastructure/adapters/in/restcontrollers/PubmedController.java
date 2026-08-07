@@ -178,12 +178,17 @@ public class PubmedController {
     }
 
     @GET
-    @Path("/synonyms/{pipelineId}/by-name")
+    @Path("/synonyms/{pipelineId}/by-name/{name}")
     public Response getSynonymsByName(
             @PathParam("pipelineId") String pipelineId,
-            @QueryParam("name") String name
+            @PathParam("name") String name
     ) {
         log.info("Request to get synonyms for pipelineId=[{}], name=[{}]", pipelineId, name);
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"message\": \"Path parameter 'name' is required\"}")
+                    .build();
+        }
         return getSynonymsByName.execute(pipelineId, name)
                 .map(result -> Response.ok(result).build())
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
