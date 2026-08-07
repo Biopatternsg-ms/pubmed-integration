@@ -68,6 +68,24 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
         }
     }
 
+    @Override
+    public List<KbEvent> findByPipelineIdAndTerm(String pipelineId, String term) {
+        try {
+            if (term == null || term.isBlank()) {
+                return List.of();
+            }
+            String cleanTerm = term.trim();
+            String regex = "^" + java.util.regex.Pattern.quote(cleanTerm) + "$";
+            return find("{'pipelineId': ?1, '$or': [{'first': {'$regex': ?2, '$options': 'i'}}, {'second': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
+                    .stream()
+                    .map(this::toDomain)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error finding KbEvents for pipelineId=[{}] and term=[{}]: {}", pipelineId, term, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
     private KbEvent toDomain(KbEventCollection doc) {
         return new KbEvent(
                 doc.getPipelineId(),

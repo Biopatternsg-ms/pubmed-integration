@@ -37,5 +37,10 @@ public interface KbEventRepository {
      * Si ya existe, añade únicamente los pubmedIds que no estén en la lista.
      */
     void upsert(String pipelineId, String first, String relation, String second, List<String> pubmedIds);
+
+    /**
+     * Busca todos los eventos biológicos asociados a un pipelineId donde 'first' o 'second' coincida con el término.
+     */
+    List<KbEvent> findByPipelineIdAndTerm(String pipelineId, String term);
 }
 

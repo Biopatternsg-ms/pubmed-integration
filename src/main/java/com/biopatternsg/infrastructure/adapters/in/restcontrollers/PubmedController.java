@@ -22,6 +22,7 @@ import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
 import com.biopatternsg.domain.ports.in.GetSynonymsByName;
+import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
@@ -58,6 +59,7 @@ public class PubmedController {
     private final GenerateAlignedObjects generateAlignedObjects;
     private final GetPaginatedSynonyms getPaginatedSynonyms;
     private final GetSynonymsByName getSynonymsByName;
+    private final GetKbEventsByTerm getKbEventsByTerm;
     private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
@@ -194,6 +196,22 @@ public class PubmedController {
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
                         .entity("{\"message\": \"Synonyms not found for pipelineId: " + pipelineId + " and name: " + name + "\"}")
                         .build());
+    }
+
+    @GET
+    @Path("/kb-events/{pipelineId}/by-term/{term}")
+    public Response getKbEventsByTerm(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("term") String term
+    ) {
+        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]", pipelineId, term);
+        if (term == null || term.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"message\": \"Path parameter 'term' is required\"}")
+                    .build();
+        }
+        var events = getKbEventsByTerm.execute(pipelineId, term);
+        return Response.ok(events).build();
     }
 
     @GET
