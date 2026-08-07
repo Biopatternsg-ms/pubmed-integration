@@ -21,6 +21,8 @@ import com.biopatternsg.domain.model.PipelineSynonym;
 import java.util.List;
 import java.util.Map;
 
+import java.util.Optional;
+
 public interface SynonymRepository {
     /**
      * Persists synonym information to the MongoDB collection.
@@ -35,4 +37,6 @@ public interface SynonymRepository {
     Map<String, List<String>> findAllByPipelineId(String pipelineId);
 
     PaginatedResult<PipelineSynonym> findByPipelineId(String pipelineId, int page, int size);
+
+    Optional<PipelineSynonym> findByPipelineIdAndName(String pipelineId, String name);
 }

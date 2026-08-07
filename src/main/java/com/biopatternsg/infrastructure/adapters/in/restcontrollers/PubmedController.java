@@ -21,6 +21,7 @@ import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
+import com.biopatternsg.domain.ports.in.GetSynonymsByName;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
@@ -56,6 +57,7 @@ public class PubmedController {
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
     private final GetPaginatedSynonyms getPaginatedSynonyms;
+    private final GetSynonymsByName getSynonymsByName;
     private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
@@ -173,6 +175,20 @@ public class PubmedController {
         log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
         var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
         return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/synonyms/{pipelineId}/by-name")
+    public Response getSynonymsByName(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("name") String name
+    ) {
+        log.info("Request to get synonyms for pipelineId=[{}], name=[{}]", pipelineId, name);
+        return getSynonymsByName.execute(pipelineId, name)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"message\": \"Synonyms not found for pipelineId: " + pipelineId + " and name: " + name + "\"}")
+                        .build());
     }
 
     @GET
