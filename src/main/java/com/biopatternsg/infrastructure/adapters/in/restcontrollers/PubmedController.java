@@ -21,6 +21,7 @@ import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
+import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
@@ -55,6 +56,7 @@ public class PubmedController {
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
     private final GetPaginatedSynonyms getPaginatedSynonyms;
+    private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -171,6 +173,17 @@ public class PubmedController {
         log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
         var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
         return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/aligned-results/{pipelineId}")
+    public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get aligned results for pipelineId=[{}]", pipelineId);
+        return getAlignedResults.execute(pipelineId)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"message\": \"Aligned results not found for pipelineId: " + pipelineId + "\"}")
+                        .build());
     }
 
 }
