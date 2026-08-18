@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.domain.ports.in;
 
-import com.biopatternsg.domain.model.AlignedResult;
-import com.biopatternsg.domain.model.AlignedResultSummary;
+import com.biopatternsg.domain.model.PipelineSynonym;
 
 import java.util.Optional;
 
-public interface AlignedResultRepository {
-    void save(AlignedResult alignedResult);
-    Optional<AlignedResultSummary> findByPipelineId(String pipelineId);
+public interface GetSynonymsByName {
+    Optional<PipelineSynonym> execute(String pipelineId, String name);
 }

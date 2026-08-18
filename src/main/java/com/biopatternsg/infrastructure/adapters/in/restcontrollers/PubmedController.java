@@ -21,6 +21,9 @@ import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
+import com.biopatternsg.domain.ports.in.GetSynonymsByName;
+import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
+import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
@@ -40,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.biopatternsg.infrastructure.session.SessionUtils;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -55,6 +59,9 @@ public class PubmedController {
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
     private final GetPaginatedSynonyms getPaginatedSynonyms;
+    private final GetSynonymsByName getSynonymsByName;
+    private final GetKbEventsByTerm getKbEventsByTerm;
+    private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -73,7 +80,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Buildind pubmed pairs\"}")
+                .entity(Map.of("message", "Building pubmed pairs"))
                 .build();
     }
 
@@ -94,7 +101,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Searching pubmed IDS by pairs\"}")
+                .entity(Map.of("message", "Searching pubmed IDS by pairs"))
                 .build();
     }
 
@@ -115,7 +122,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Searching PubTator by pmids\"}")
+                .entity(Map.of("message", "Searching PubTator by pmids"))
                 .build();
     }
 
@@ -136,7 +143,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Knowledge base generation pipeline started\"}")
+                .entity(Map.of("message", "Knowledge base generation pipeline started"))
                 .build();
     }
 
@@ -157,7 +164,7 @@ public class PubmedController {
         }, executor);
 
         return Response.accepted()
-                .entity("{\"message\": \"Aligned objects generation started\"}")
+                .entity(Map.of("message", "Aligned objects generation started"))
                 .build();
     }
 
@@ -171,6 +178,52 @@ public class PubmedController {
         log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
         var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
         return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/synonyms/{pipelineId}/by-name/{name}")
+    public Response getSynonymsByName(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("name") String name
+    ) {
+        log.info("Request to get synonyms for pipelineId=[{}], name=[{}]", pipelineId, name);
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'name' is required"))
+                    .build();
+        }
+        return getSynonymsByName.execute(pipelineId, name)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "Synonyms not found for pipelineId: " + pipelineId + " and name: " + name))
+                        .build());
+    }
+
+    @GET
+    @Path("/kb-events/{pipelineId}/by-term/{term}")
+    public Response getKbEventsByTerm(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("term") String term
+    ) {
+        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]", pipelineId, term);
+        if (term == null || term.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'term' is required"))
+                    .build();
+        }
+        var events = getKbEventsByTerm.execute(pipelineId, term);
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/aligned-results/{pipelineId}")
+    public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get aligned results for pipelineId=[{}]", pipelineId);
+        return getAlignedResults.execute(pipelineId)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "Aligned results not found for pipelineId: " + pipelineId))
+                        .build());
     }
 
 }

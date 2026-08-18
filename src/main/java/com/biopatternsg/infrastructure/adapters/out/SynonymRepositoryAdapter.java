@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -96,6 +97,28 @@ public class SynonymRepositoryAdapter implements SynonymRepository, PanacheMongo
             return new PaginatedResult<>(items, totalItems, totalPages, page, size);
         } catch (Exception e) {
             log.error("Error finding paginated synonyms for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
+    public Optional<PipelineSynonym> findByPipelineIdAndName(String pipelineId, String name) {
+        try {
+            if (name == null || name.isBlank()) {
+                return Optional.empty();
+            }
+            String cleanName = name.trim();
+            var exactResult = find("pipelineId = ?1 and name = ?2", pipelineId, cleanName).firstResultOptional();
+            if (exactResult.isPresent()) {
+                return exactResult.map(col -> new PipelineSynonym(col.getName(), col.getSynonyms()));
+            }
+
+            String regex = "^" + java.util.regex.Pattern.quote(cleanName) + "$";
+            return find("{'pipelineId': ?1, '$or': [{'name': {'$regex': ?2, '$options': 'i'}}, {'synonyms': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
+                    .firstResultOptional()
+                    .map(col -> new PipelineSynonym(col.getName(), col.getSynonyms()));
+        } catch (Exception e) {
+            log.error("Error finding synonyms for pipelineId=[{}] and name=[{}]: {}", pipelineId, name, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }

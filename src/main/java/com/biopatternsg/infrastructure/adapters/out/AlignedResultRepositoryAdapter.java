@@ -15,7 +15,9 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
+import com.biopatternsg.domain.model.AlignedAs;
 import com.biopatternsg.domain.model.AlignedResult;
+import com.biopatternsg.domain.model.AlignedResultSummary;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.mongo.AlignedResultCollection;
 import com.biopatternsg.mongo.AlignedAsEmbedded;
@@ -24,7 +26,9 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,6 +68,40 @@ public class AlignedResultRepositoryAdapter implements AlignedResultRepository, 
             log.info("AlignedResult successfully saved/updated for pipelineId=[{}]", alignedResult.pipelineId());
         } catch (Exception e) {
             log.error("Error saving AlignedResult for pipelineId=[{}]: {}", alignedResult.pipelineId(), e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
+    public Optional<AlignedResultSummary> findByPipelineId(String pipelineId) {
+        if (pipelineId == null || pipelineId.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        try {
+            AlignedResultCollection entity = find("pipelineId", pipelineId).firstResult();
+            if (entity == null) {
+                return Optional.empty();
+            }
+
+            List<AlignedAs> alignedAsList = entity.getAlignedAs() == null ? Collections.emptyList() :
+                    entity.getAlignedAs().stream()
+                            .map(a -> new AlignedAs(a.getExpertObjectName(), a.getAlternativeIds()))
+                            .collect(Collectors.toList());
+
+            List<String> aligned = entity.getAligned() != null ? entity.getAligned() : Collections.emptyList();
+            List<String> noAligned = entity.getNoAligned() != null ? entity.getNoAligned() : Collections.emptyList();
+
+            AlignedResultSummary summary = new AlignedResultSummary(
+                    entity.getPipelineId(),
+                    aligned,
+                    noAligned,
+                    alignedAsList
+            );
+
+            return Optional.of(summary);
+        } catch (Exception e) {
+            log.error("Error fetching AlignedResult for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
