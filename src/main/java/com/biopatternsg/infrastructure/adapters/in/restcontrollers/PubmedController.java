@@ -20,8 +20,8 @@ import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
-import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
-import com.biopatternsg.domain.ports.in.GetSynonymsByName;
+import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
+import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
@@ -58,8 +58,8 @@ public class PubmedController {
     private final SearchPubtatorByPmids searchPubtatorByPmids;
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
-    private final GetPaginatedSynonyms getPaginatedSynonyms;
-    private final GetSynonymsByName getSynonymsByName;
+    private final GetPaginatedKbObjects getPaginatedKbObjects;
+    private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
     private final GetAlignedResults getAlignedResults;
     private final Executor executor;
@@ -169,15 +169,44 @@ public class PubmedController {
     }
 
     @GET
+    @Path("/kb-objects/{pipelineId}")
+    public Response getKbObjects(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        log.info("Request to get kb_objects for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
+        var paginatedResult = getPaginatedKbObjects.execute(pipelineId, page, size);
+        return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/by-name/{name}")
+    public Response getKbObjectByName(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("name") String name
+    ) {
+        log.info("Request to get kb_object for pipelineId=[{}], name=[{}]", pipelineId, name);
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'name' is required"))
+                    .build();
+        }
+        return getKbObjectByName.execute(pipelineId, name)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "KB object not found for pipelineId: " + pipelineId + " and name: " + name))
+                        .build());
+    }
+
+    @GET
     @Path("/synonyms/{pipelineId}")
     public Response getSynonyms(
             @PathParam("pipelineId") String pipelineId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("50") int size
     ) {
-        log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
-        var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
-        return Response.ok(paginatedResult).build();
+        return getKbObjects(pipelineId, page, size);
     }
 
     @GET
@@ -186,17 +215,7 @@ public class PubmedController {
             @PathParam("pipelineId") String pipelineId,
             @PathParam("name") String name
     ) {
-        log.info("Request to get synonyms for pipelineId=[{}], name=[{}]", pipelineId, name);
-        if (name == null || name.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'name' is required"))
-                    .build();
-        }
-        return getSynonymsByName.execute(pipelineId, name)
-                .map(result -> Response.ok(result).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("message", "Synonyms not found for pipelineId: " + pipelineId + " and name: " + name))
-                        .build());
+        return getKbObjectByName(pipelineId, name);
     }
 
     @GET

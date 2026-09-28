@@ -21,7 +21,7 @@ import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.*;
 class GenerateAlignedObjectsUseCaseTest {
 
     @Mock
-    private SynonymRepository synonymRepository;
+    private KbObjectRepository kbObjectRepository;
 
     @Mock
     private AlignedResultRepository alignedResultRepository;
@@ -74,7 +74,7 @@ class GenerateAlignedObjectsUseCaseTest {
                 "BRCA1", List.of("BRCA1")
         );
 
-        when(synonymRepository.findAllByPipelineId(pipelineId)).thenReturn(synonymsMap);
+        when(kbObjectRepository.findAllSynonymsByPipelineId(pipelineId)).thenReturn(synonymsMap);
 
         // Act
         generateAlignedObjectsUseCase.execute(pipelineId, expertObjects, userId);
@@ -97,7 +97,7 @@ class GenerateAlignedObjectsUseCaseTest {
         List<ExpertObjectConfig> expertObjects = List.of(
                 new ExpertObjectConfig("P04637", "HGNC:11998", "TP53")
         );
-        when(synonymRepository.findAllByPipelineId(pipelineId))
+        when(kbObjectRepository.findAllSynonymsByPipelineId(pipelineId))
                 .thenThrow(new RuntimeException("Database error"));
 
         // Act & Assert

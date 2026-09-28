@@ -22,5 +22,10 @@ import java.util.Map;
 
 public record GenerateKbResult(
         List<KbEvent> events,
-        Map<String, List<String>> synonyms
-) {}
+        Map<String, List<String>> synonyms,
+        Map<String, String> biotypes
+) {
+    public GenerateKbResult(List<KbEvent> events, Map<String, List<String>> synonyms) {
+        this(events, synonyms, java.util.Collections.emptyMap());
+    }
+}

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.domain.ports.in;
 
-import java.util.List;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.model.PaginatedResult;
 
-public record PipelineSynonym(
-        String name,
-        List<String> synonyms
-) {}
+public interface GetPaginatedKbObjects {
+    PaginatedResult<KbObject> execute(String pipelineId, int page, int size);
+}

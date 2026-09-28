@@ -13,11 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.in;
+package com.biopatternsg.mongo;
 
-import com.biopatternsg.domain.model.PaginatedResult;
-import com.biopatternsg.domain.model.PipelineSynonym;
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface GetPaginatedSynonyms {
-    PaginatedResult<PipelineSynonym> execute(String pipelineId, int page, int size);
+import java.util.List;
+import java.util.Map;
+
+@Setter
+@Getter
+@MongoEntity(collection = "kb_objects")
+public class KbObjectCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private String name;
+    private List<String> synonyms;
+    private Map<String, String> biotypes;
 }

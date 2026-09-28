@@ -23,7 +23,7 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -42,17 +42,17 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
 
-    private final SynonymRepository synonymRepository;
+    private final KbObjectRepository kbObjectRepository;
     private final AlignedResultRepository alignedResultRepository;
     private final ConfigAndControlRepository configAndControlRepository;
 
     @Inject
     public GenerateAlignedObjectsUseCase(
-            SynonymRepository synonymRepository,
+            KbObjectRepository kbObjectRepository,
             AlignedResultRepository alignedResultRepository,
             ConfigAndControlRepository configAndControlRepository
     ) {
-        this.synonymRepository = synonymRepository;
+        this.kbObjectRepository = kbObjectRepository;
         this.alignedResultRepository = alignedResultRepository;
         this.configAndControlRepository = configAndControlRepository;
     }
@@ -99,7 +99,7 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     }
 
     private Map<String, List<String>> fetchSynonyms(String pipelineId) {
-        Map<String, List<String>> synonymsMap = synonymRepository.findAllByPipelineId(pipelineId);
+        Map<String, List<String>> synonymsMap = kbObjectRepository.findAllSynonymsByPipelineId(pipelineId);
         log.info("Fetched synonyms dictionary with [{}] entries for pipelineId=[{}]", 
                 synonymsMap != null ? synonymsMap.size() : 0, pipelineId);
         return synonymsMap != null ? synonymsMap : Collections.emptyMap();

@@ -15,9 +15,9 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.PipelineSynonym;
-import com.biopatternsg.domain.ports.in.GetSynonymsByName;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.ports.in.GetKbObjectByName;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,17 +25,17 @@ import java.util.Optional;
 
 @Slf4j
 @ApplicationScoped
-public class GetSynonymsByNameUseCase implements GetSynonymsByName {
+public class GetKbObjectByNameUseCase implements GetKbObjectByName {
 
-    private final SynonymRepository synonymRepository;
+    private final KbObjectRepository kbObjectRepository;
 
-    public GetSynonymsByNameUseCase(SynonymRepository synonymRepository) {
-        this.synonymRepository = synonymRepository;
+    public GetKbObjectByNameUseCase(KbObjectRepository kbObjectRepository) {
+        this.kbObjectRepository = kbObjectRepository;
     }
 
     @Override
-    public Optional<PipelineSynonym> execute(String pipelineId, String name) {
-        log.info("Executing GetSynonymsByNameUseCase for pipelineId=[{}], name=[{}]", pipelineId, name);
-        return synonymRepository.findByPipelineIdAndName(pipelineId, name);
+    public Optional<KbObject> execute(String pipelineId, String name) {
+        log.info("Executing GetKbObjectByNameUseCase for pipelineId=[{}], name=[{}]", pipelineId, name);
+        return kbObjectRepository.findByPipelineIdAndName(pipelineId, name);
     }
 }

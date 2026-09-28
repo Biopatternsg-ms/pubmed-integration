@@ -15,28 +15,32 @@
  */
 package com.biopatternsg.domain.ports.out.repositories;
 
+import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.model.PaginatedResult;
-import com.biopatternsg.domain.model.PipelineSynonym;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Optional;
 
-public interface SynonymRepository {
+public interface KbObjectRepository {
     /**
-     * Persists synonym information to the MongoDB collection.
-     * If the document (pipelineId, name) exists, appends the new synonyms (preventing duplicates).
-     * If it does not exist, creates the document.
+     * Persists KB object synonym and biotype information to the MongoDB kb_objects collection.
+     * If the document (pipelineId, name) exists, appends the new synonyms (preventing duplicates)
+     * and sets each synonym's biotype. If it does not exist, creates the document.
      */
-    void saveSynonyms(String pipelineId, Map<String, List<String>> synonyms);
+    default void saveKbObjects(String pipelineId, Map<String, List<String>> synonyms) {
+        saveKbObjects(pipelineId, synonyms, Collections.emptyMap());
+    }
+
+    void saveKbObjects(String pipelineId, Map<String, List<String>> synonyms, Map<String, String> biotypes);
 
     /**
      * Retrieves all synonyms for a given pipelineId, mapped by their name (main ID).
      */
-    Map<String, List<String>> findAllByPipelineId(String pipelineId);
+    Map<String, List<String>> findAllSynonymsByPipelineId(String pipelineId);
 
-    PaginatedResult<PipelineSynonym> findByPipelineId(String pipelineId, int page, int size);
+    PaginatedResult<KbObject> findByPipelineId(String pipelineId, int page, int size);
 
-    Optional<PipelineSynonym> findByPipelineIdAndName(String pipelineId, String name);
+    Optional<KbObject> findByPipelineIdAndName(String pipelineId, String name);
 }

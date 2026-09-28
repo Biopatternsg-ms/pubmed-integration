@@ -21,10 +21,10 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
 import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb;
 import com.biopatternsg.domain.ports.out.external_repositories.GenerateKbResult;
@@ -44,7 +44,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
     private final BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb;
     private final KbEventRepository kbEventRepository;
     private final ConfigAndControlRepository configAndControlRepository;
-    private final SynonymRepository synonymRepository;
+    private final KbObjectRepository kbObjectRepository;
     private final PubmedResultRepository pubmedResultRepository;
 
     @Inject
@@ -54,7 +54,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb,
             KbEventRepository kbEventRepository,
             ConfigAndControlRepository configAndControlRepository,
-            SynonymRepository synonymRepository,
+            KbObjectRepository kbObjectRepository,
             PubmedResultRepository pubmedResultRepository
     ) {
         this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
@@ -62,7 +62,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         this.buildKnowledgeBaseRepoWeb = buildKnowledgeBaseRepoWeb;
         this.kbEventRepository = kbEventRepository;
         this.configAndControlRepository = configAndControlRepository;
-        this.synonymRepository = synonymRepository;
+        this.kbObjectRepository = kbObjectRepository;
         this.pubmedResultRepository = pubmedResultRepository;
     }
 
@@ -109,19 +109,20 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                             pubtatorResult.objects(),
                             pubtatorResult.events()
                      );
-                     log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}].",
+                     log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}], biotypes=[{}].",
                              pmid,
                              kbResult.events() != null ? kbResult.events().size() : 0,
-                             kbResult.synonyms() != null ? kbResult.synonyms().size() : 0);
+                             kbResult.synonyms() != null ? kbResult.synonyms().size() : 0,
+                             kbResult.biotypes() != null ? kbResult.biotypes().size() : 0);
 
-                    // 4. Persistir cada evento en MongoDB
+                    // 4. Persistir cada evento en MongoDB (kb_events)
                     if (kbResult.events() != null) {
                         persistKbEvents(pipelineId, kbResult.events());
                     }
 
-                    // 5. Persistir los sinónimos en MongoDB
+                    // 5. Persistir los objetos de la KB (synonyms + biotypes) en MongoDB (kb_objects)
                     if (kbResult.synonyms() != null) {
-                        synonymRepository.saveSynonyms(pipelineId, kbResult.synonyms());
+                        kbObjectRepository.saveKbObjects(pipelineId, kbResult.synonyms(), kbResult.biotypes());
                     }
 
                     successCount.incrementAndGet();
