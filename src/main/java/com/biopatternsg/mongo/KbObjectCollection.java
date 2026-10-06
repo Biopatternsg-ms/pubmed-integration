@@ -30,5 +30,5 @@ public class KbObjectCollection extends PanacheMongoEntity {
     private String pipelineId;
     private String name;
     private List<String> synonyms;
-    private Map<String, String> biotypes;
+    private List<String> biotypes;
 }

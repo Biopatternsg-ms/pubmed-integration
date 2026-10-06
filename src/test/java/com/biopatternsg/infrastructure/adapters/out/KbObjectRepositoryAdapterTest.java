@@ -131,8 +131,8 @@ class KbObjectRepositoryAdapterTest {
     }
 
     @Test
-    @DisplayName("When synonyms and biotypes are saved, it should combine $addToSet for synonyms and $set for each synonym biotype")
-    void saveKbObjects_withBiotype_shouldGenerateAddToSetAndSetBsonOperations() {
+    @DisplayName("When synonyms and biotypes are saved, it should use $addToSet for synonyms and $addToSet for unique biotypes without duplicates")
+    void saveKbObjects_withBiotype_shouldGenerateAddToSetForUniqueBiotypes() {
         // Arrange
         String name = "CXCR4";
         List<String> synonymList = List.of("CXCR4", "LCR-1", "CD184");
@@ -151,7 +151,7 @@ class KbObjectRepositoryAdapterTest {
         // Act
         adapter.saveKbObjects(PIPELINE_ID, synonymsMap, biotypesMap);
 
-        // Assert — Only CXCR4 (present in synonymsMap) is persisted; AMPICILLIN (only in biotypesMap) is ignored
+        // Assert — Only CXCR4 synonyms are persisted; AMPICILLIN is ignored; unique biotypes is only ["protein"]
         verify(mockCollection, times(1)).updateOne(
                 filterCaptor.capture(),
                 updateCaptor.capture(),
@@ -163,11 +163,16 @@ class KbObjectRepositoryAdapterTest {
                 MongoClientSettings.getDefaultCodecRegistry()
         );
         assertThat(updateDoc.containsKey("$addToSet")).isTrue();
-        assertThat(updateDoc.containsKey("$set")).isTrue();
-        BsonDocument setDoc = updateDoc.getDocument("$set");
-        assertThat(setDoc.getString("biotypes.CXCR4").getValue()).isEqualTo("protein");
-        assertThat(setDoc.getString("biotypes.LCR-1").getValue()).isEqualTo("protein");
-        assertThat(setDoc.getString("biotypes.CD184").getValue()).isEqualTo("protein");
+        assertThat(updateDoc.containsKey("$set")).isFalse();
+        BsonDocument addToSetDoc = updateDoc.getDocument("$addToSet");
+        assertThat(addToSetDoc.containsKey("synonyms")).isTrue();
+        assertThat(addToSetDoc.containsKey("biotypes")).isTrue();
+
+        BsonDocument biotypesDoc = addToSetDoc.getDocument("biotypes");
+        assertThat(biotypesDoc.containsKey("$each")).isTrue();
+        BsonArray eachArray = biotypesDoc.getArray("$each");
+        assertThat(eachArray).hasSize(1);
+        assertThat(eachArray.get(0).asString().getValue()).isEqualTo("protein");
         assertThat(optionsCaptor.getValue().isUpsert()).isTrue();
     }
 }

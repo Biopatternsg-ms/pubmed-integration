@@ -17,14 +17,13 @@ package com.biopatternsg.domain.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 public record KbObject(
         String name,
         List<String> synonyms,
-        Map<String, String> biotypes
+        List<String> biotypes
 ) {
     public KbObject(String name, List<String> synonyms) {
-        this(name, synonyms, Collections.emptyMap());
+        this(name, synonyms, Collections.emptyList());
     }
 }

@@ -29,9 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -57,16 +60,22 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                 updates.add(Updates.addEachToSet("synonyms", synonymList));
 
                 if (biotypes != null && !biotypes.isEmpty()) {
+                    Set<String> uniqueBiotypes = new LinkedHashSet<>();
                     String mainBiotype = biotypes.get(name);
+                    if (mainBiotype != null && !mainBiotype.isBlank()) {
+                        uniqueBiotypes.add(mainBiotype.trim().toLowerCase());
+                    }
                     for (String syn : synonymList) {
                         if (syn == null || syn.isBlank()) {
                             continue;
                         }
                         String synBiotype = biotypes.getOrDefault(syn, mainBiotype);
                         if (synBiotype != null && !synBiotype.isBlank()) {
-                            String safeKey = syn.replace(".", "\uFF0E");
-                            updates.add(Updates.set("biotypes." + safeKey, synBiotype));
+                            uniqueBiotypes.add(synBiotype.trim().toLowerCase());
                         }
+                    }
+                    if (!uniqueBiotypes.isEmpty()) {
+                        updates.add(Updates.addEachToSet("biotypes", new ArrayList<>(uniqueBiotypes)));
                     }
                 }
 
@@ -115,7 +124,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
 
             List<KbObject> items = query.page(page, size)
                     .stream()
-                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes()))
+                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()))
                     .collect(Collectors.toList());
 
             return new PaginatedResult<>(items, totalItems, totalPages, page, size);
@@ -134,13 +143,13 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             String cleanName = name.trim();
             var exactResult = find("pipelineId = ?1 and name = ?2", pipelineId, cleanName).firstResultOptional();
             if (exactResult.isPresent()) {
-                return exactResult.map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes()));
+                return exactResult.map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()));
             }
 
             String regex = "^" + java.util.regex.Pattern.quote(cleanName) + "$";
             return find("{'pipelineId': ?1, '$or': [{'name': {'$regex': ?2, '$options': 'i'}}, {'synonyms': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .firstResultOptional()
-                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes()));
+                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()));
         } catch (Exception e) {
             log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}", pipelineId, name, e.getMessage(), e);
             throw new InternalServerError(e);
