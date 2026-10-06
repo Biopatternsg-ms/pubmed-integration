@@ -23,6 +23,7 @@ import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
 import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
+import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
@@ -61,6 +62,7 @@ public class PubmedController {
     private final GetPaginatedKbObjects getPaginatedKbObjects;
     private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
+    private final GetKbEventsByPipeline getKbEventsByPipeline;
     private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
@@ -231,6 +233,21 @@ public class PubmedController {
                     .build();
         }
         var events = getKbEventsByTerm.execute(pipelineId, term);
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/kb-events/{pipelineId}")
+    public Response getKbEventsByPipeline(
+            @PathParam("pipelineId") String pipelineId
+    ) {
+        log.info("Request to get all kb_events for pipelineId=[{}]", pipelineId);
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        var events = getKbEventsByPipeline.execute(pipelineId);
         return Response.ok(events).build();
     }
 

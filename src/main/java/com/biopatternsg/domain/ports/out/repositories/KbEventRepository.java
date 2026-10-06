@@ -42,5 +42,10 @@ public interface KbEventRepository {
      * Busca todos los eventos biológicos asociados a un pipelineId donde 'first' o 'second' coincida con el término.
      */
     List<KbEvent> findByPipelineIdAndTerm(String pipelineId, String term);
+
+    /**
+     * Busca todos los eventos biológicos asociados a un pipelineId.
+     */
+    List<KbEvent> findByPipelineId(String pipelineId);
 }
 

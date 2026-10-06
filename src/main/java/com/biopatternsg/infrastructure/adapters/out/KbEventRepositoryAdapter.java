@@ -86,6 +86,22 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
         }
     }
 
+    @Override
+    public List<KbEvent> findByPipelineId(String pipelineId) {
+        try {
+            if (pipelineId == null || pipelineId.isBlank()) {
+                return List.of();
+            }
+            return find("pipelineId", pipelineId)
+                    .stream()
+                    .map(this::toDomain)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error finding all KbEvents for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
     private KbEvent toDomain(KbEventCollection doc) {
         return new KbEvent(
                 doc.getPipelineId(),
