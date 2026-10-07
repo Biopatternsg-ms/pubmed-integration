@@ -57,7 +57,7 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
         if (pmids == null || pmids.isEmpty()) {
             return Collections.emptyList();
         }
-        return list("pmid in ?1", pmids).stream()
+        return find("{'pmid': {'$in': ?1}}", pmids).stream()
                 .map(PubtatorResultCollection::getPmid)
                 .toList();
     }
@@ -114,6 +114,18 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
             return null;
         }
         return toDomain(doc);
+    }
+
+    @Override
+    public List<PubtatorResult> findByPmids(List<String> pmids) {
+        if (pmids == null || pmids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return find("{'pmid': {'$in': ?1}}", pmids).stream()
+                .map(this::toDomain)
+                .toList();
+
     }
 
     private PubtatorResult toDomain(PubtatorResultCollection doc) {
