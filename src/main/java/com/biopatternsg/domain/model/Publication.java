@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.domain.model;
 
-import com.biopatternsg.domain.model.PubtatorResult;
-import java.util.List;
-
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-    List<PubtatorResult> findByPmids(List<String> pmids);
-}
+/**
+ * Modelo de dominio que representa los datos esenciales de una publicación científica (PubMed/PubTator).
+ */
+public record Publication(
+        String pmid,
+        String title,
+        String text
+) {}

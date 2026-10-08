@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.domain.ports.in;
 
-import com.biopatternsg.domain.model.PubtatorResult;
+import com.biopatternsg.domain.model.Publication;
+
 import java.util.List;
 
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-    List<PubtatorResult> findByPmids(List<String> pmids);
+public interface GetPublicationsByPmids {
+    List<Publication> execute(List<String> pmids);
 }
