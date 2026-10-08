@@ -21,9 +21,14 @@ import java.util.List;
 public record KbObject(
         String name,
         List<String> synonyms,
-        List<String> biotypes
+        List<String> biotypes,
+        List<String> roles
 ) {
+    public KbObject(String name, List<String> synonyms, List<String> biotypes) {
+        this(name, synonyms, biotypes, Collections.emptyList());
+    }
+
     public KbObject(String name, List<String> synonyms) {
-        this(name, synonyms, Collections.emptyList());
+        this(name, synonyms, Collections.emptyList(), Collections.emptyList());
     }
 }

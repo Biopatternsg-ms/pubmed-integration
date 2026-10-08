@@ -42,5 +42,9 @@ public interface KbObjectRepository {
 
     PaginatedResult<KbObject> findByPipelineId(String pipelineId, int page, int size);
 
+    List<KbObject> findAllByPipelineId(String pipelineId);
+
     Optional<KbObject> findByPipelineIdAndName(String pipelineId, String name);
+
+    void updateRoles(String pipelineId, Map<String, List<String>> roles);
 }

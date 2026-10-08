@@ -20,9 +20,12 @@ import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.mongo.KbObjectCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
+import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.model.WriteModel;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -124,12 +127,35 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
 
             List<KbObject> items = query.page(page, size)
                     .stream()
-                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()))
+                    .map(col -> new KbObject(
+                            col.getName(),
+                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
+                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
+                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
+                    ))
                     .collect(Collectors.toList());
 
             return new PaginatedResult<>(items, totalItems, totalPages, page, size);
         } catch (Exception e) {
             log.error("Error finding paginated KB objects for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
+    public List<KbObject> findAllByPipelineId(String pipelineId) {
+        try {
+            return find("pipelineId", pipelineId)
+                    .stream()
+                    .map(col -> new KbObject(
+                            col.getName(),
+                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
+                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
+                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
+                    ))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error finding all KB objects for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -143,15 +169,52 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             String cleanName = name.trim();
             var exactResult = find("pipelineId = ?1 and name = ?2", pipelineId, cleanName).firstResultOptional();
             if (exactResult.isPresent()) {
-                return exactResult.map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()));
+                return exactResult.map(col -> new KbObject(
+                        col.getName(),
+                        col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
+                        col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
+                        col.getRoles() != null ? col.getRoles() : Collections.emptyList()
+                ));
             }
 
             String regex = "^" + java.util.regex.Pattern.quote(cleanName) + "$";
             return find("{'pipelineId': ?1, '$or': [{'name': {'$regex': ?2, '$options': 'i'}}, {'synonyms': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .firstResultOptional()
-                    .map(col -> new KbObject(col.getName(), col.getSynonyms(), col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList()));
+                    .map(col -> new KbObject(
+                            col.getName(),
+                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
+                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
+                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
+                    ));
         } catch (Exception e) {
             log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}", pipelineId, name, e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
+    public void updateRoles(String pipelineId, Map<String, List<String>> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return;
+        }
+        try {
+            List<WriteModel<KbObjectCollection>> writes = new ArrayList<>(roles.size());
+            for (Map.Entry<String, List<String>> entry : roles.entrySet()) {
+                String name = entry.getKey();
+                List<String> roleList = entry.getValue() != null ? entry.getValue() : Collections.emptyList();
+                writes.add(new UpdateOneModel<>(
+                        Filters.and(
+                                Filters.eq("pipelineId", pipelineId),
+                                Filters.eq("name", name)
+                        ),
+                        Updates.set("roles", roleList),
+                        new UpdateOptions().upsert(true)
+                ));
+            }
+            mongoCollection().bulkWrite(writes, new BulkWriteOptions().ordered(false));
+            log.info("Bulk updated roles for {} objects in pipelineId=[{}]", roles.size(), pipelineId);
+        } catch (Exception e) {
+            log.error("Error updating roles for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }

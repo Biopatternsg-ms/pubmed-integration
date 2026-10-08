@@ -24,6 +24,8 @@ import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
 import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
+import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
+import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
@@ -33,6 +35,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -44,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.biopatternsg.infrastructure.session.SessionUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -63,6 +67,8 @@ public class PubmedController {
     private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
     private final GetKbEventsByPipeline getKbEventsByPipeline;
+    private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
+    private final UpdateKbObjectRoles updateKbObjectRoles;
     private final GetAlignedResults getAlignedResults;
     private final Executor executor;
     private final SessionUtils sessionUtils;
@@ -199,6 +205,26 @@ public class PubmedController {
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
                         .entity(Map.of("message", "KB object not found for pipelineId: " + pipelineId + " and name: " + name))
                         .build());
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/all")
+    public Response getAllKbObjects(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get all kb_objects for pipelineId=[{}]", pipelineId);
+        var objects = getAllKbObjectsByPipeline.execute(pipelineId);
+        return Response.ok(objects).build();
+    }
+
+    @PATCH
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response updateKbObjectRoles(
+            @PathParam("pipelineId") String pipelineId,
+            Map<String, List<String>> rolesMap
+    ) {
+        log.info("Request to update kb_object roles for pipelineId=[{}], count=[{}]",
+                pipelineId, rolesMap != null ? rolesMap.size() : 0);
+        updateKbObjectRoles.execute(pipelineId, rolesMap);
+        return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
     }
 
     @GET
