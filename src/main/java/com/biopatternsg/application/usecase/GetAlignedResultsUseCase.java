@@ -18,6 +18,7 @@ package com.biopatternsg.application.usecase;
 import com.biopatternsg.domain.model.AlignedResultSummary;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class GetAlignedResultsUseCase implements GetAlignedResults {
 
     @Override
     public Optional<AlignedResultSummary> execute(String pipelineId) {
-        log.info("Fetching aligned results for pipelineId=[{}]", pipelineId);
+        log.info("Fetching aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         return alignedResultRepository.findByPipelineId(pipelineId);
     }
 }

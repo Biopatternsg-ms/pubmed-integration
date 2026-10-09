@@ -47,6 +47,7 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.infrastructure.session.SessionUtils;
 
 import java.util.List;
@@ -186,7 +187,8 @@ public class PubmedController {
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("50") int size
     ) {
-        log.info("Request to get kb_objects for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
+        log.info("Request to get kb_objects for pipelineId=[{}], page=[{}], size=[{}]",
+                LogSanitizer.sanitize(pipelineId), page, size);
         var paginatedResult = getPaginatedKbObjects.execute(pipelineId, page, size);
         return Response.ok(paginatedResult).build();
     }
@@ -197,7 +199,8 @@ public class PubmedController {
             @PathParam("pipelineId") String pipelineId,
             @PathParam("name") String name
     ) {
-        log.info("Request to get kb_object for pipelineId=[{}], name=[{}]", pipelineId, name);
+        log.info("Request to get kb_object for pipelineId=[{}], name=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
         if (name == null || name.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("message", "Path parameter 'name' is required"))
@@ -213,7 +216,7 @@ public class PubmedController {
     @GET
     @Path("/kb-objects/{pipelineId}/all")
     public Response getAllKbObjects(@PathParam("pipelineId") String pipelineId) {
-        log.info("Request to get all kb_objects for pipelineId=[{}]", pipelineId);
+        log.info("Request to get all kb_objects for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         var objects = getAllKbObjectsByPipeline.execute(pipelineId);
         return Response.ok(objects).build();
     }
@@ -225,7 +228,7 @@ public class PubmedController {
             Map<String, List<String>> rolesMap
     ) {
         log.info("Request to update kb_object roles for pipelineId=[{}], count=[{}]",
-                pipelineId, rolesMap != null ? rolesMap.size() : 0);
+                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
         updateKbObjectRoles.execute(pipelineId, rolesMap);
         return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
     }
@@ -255,7 +258,8 @@ public class PubmedController {
             @PathParam("pipelineId") String pipelineId,
             @PathParam("term") String term
     ) {
-        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]", pipelineId, term);
+        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term));
         if (term == null || term.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("message", "Path parameter 'term' is required"))
@@ -270,7 +274,7 @@ public class PubmedController {
     public Response getKbEventsByPipeline(
             @PathParam("pipelineId") String pipelineId
     ) {
-        log.info("Request to get all kb_events for pipelineId=[{}]", pipelineId);
+        log.info("Request to get all kb_events for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         if (pipelineId == null || pipelineId.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
@@ -283,7 +287,7 @@ public class PubmedController {
     @GET
     @Path("/aligned-results/{pipelineId}")
     public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
-        log.info("Request to get aligned results for pipelineId=[{}]", pipelineId);
+        log.info("Request to get aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         return getAlignedResults.execute(pipelineId)
                 .map(result -> Response.ok(result).build())
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)

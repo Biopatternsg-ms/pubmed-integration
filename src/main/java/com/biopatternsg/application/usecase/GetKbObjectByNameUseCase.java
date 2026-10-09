@@ -18,6 +18,7 @@ package com.biopatternsg.application.usecase;
 import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +36,8 @@ public class GetKbObjectByNameUseCase implements GetKbObjectByName {
 
     @Override
     public Optional<KbObject> execute(String pipelineId, String name) {
-        log.info("Executing GetKbObjectByNameUseCase for pipelineId=[{}], name=[{}]", pipelineId, name);
+        log.info("Executing GetKbObjectByNameUseCase for pipelineId=[{}], name=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
         return kbObjectRepository.findByPipelineIdAndName(pipelineId, name);
     }
 }

@@ -24,6 +24,7 @@ import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -60,7 +61,7 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     @Override
     public void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId) {
         log.info("Starting expert objects alignment for pipelineId=[{}] with [{}] expert objects [{}]",
-                pipelineId, expertObjects.size(), expertObjects.stream().map(ExpertObjectConfig::symbol));
+                LogSanitizer.sanitize(pipelineId), expertObjects.size(), expertObjects.stream().map(ExpertObjectConfig::symbol));
 
         try {
             List<ExpertObjectConfig> safeExpertObjects = expertObjects != null ? expertObjects : Collections.emptyList();
@@ -89,10 +90,10 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
 
             notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId, metrics);
 
-            log.info("Successfully completed expert objects alignment for pipelineId=[{}]", pipelineId);
+            log.info("Successfully completed expert objects alignment for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
 
         } catch (Exception e) {
-            log.error("Fatal error during expert objects alignment for pipelineId=[{}]", pipelineId, e);
+            log.error("Fatal error during expert objects alignment for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId), e);
             notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
             throw new InternalServerError(e);
         }
@@ -101,7 +102,7 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     private Map<String, List<String>> fetchSynonyms(String pipelineId) {
         Map<String, List<String>> synonymsMap = kbObjectRepository.findAllSynonymsByPipelineId(pipelineId);
         log.info("Fetched synonyms dictionary with [{}] entries for pipelineId=[{}]", 
-                synonymsMap != null ? synonymsMap.size() : 0, pipelineId);
+                synonymsMap != null ? synonymsMap.size() : 0, LogSanitizer.sanitize(pipelineId));
         return synonymsMap != null ? synonymsMap : Collections.emptyMap();
     }
 

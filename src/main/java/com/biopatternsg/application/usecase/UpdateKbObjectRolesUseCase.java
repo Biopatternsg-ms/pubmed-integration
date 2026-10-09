@@ -17,6 +17,7 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class UpdateKbObjectRolesUseCase implements UpdateKbObjectRoles {
     @Override
     public void execute(String pipelineId, Map<String, List<String>> rolesMap) {
         log.info("Updating roles in kb_objects for pipelineId: {}, total entries: {}",
-                pipelineId, rolesMap != null ? rolesMap.size() : 0);
+                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
         if (pipelineId == null || pipelineId.isBlank() || rolesMap == null || rolesMap.isEmpty()) {
             return;
         }

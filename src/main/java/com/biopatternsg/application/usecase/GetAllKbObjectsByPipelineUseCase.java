@@ -18,6 +18,7 @@ package com.biopatternsg.application.usecase;
 import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class GetAllKbObjectsByPipelineUseCase implements GetAllKbObjectsByPipeli
 
     @Override
     public List<KbObject> execute(String pipelineId) {
-        log.info("Retrieving all KB objects for pipelineId: {}", pipelineId);
+        log.info("Retrieving all KB objects for pipelineId: {}", LogSanitizer.sanitize(pipelineId));
         if (pipelineId == null || pipelineId.isBlank()) {
             return Collections.emptyList();
         }
