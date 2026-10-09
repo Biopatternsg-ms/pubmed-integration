@@ -66,7 +66,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     Set<String> uniqueBiotypes = new LinkedHashSet<>();
                     String mainBiotype = biotypes.get(name);
                     if (mainBiotype != null && !mainBiotype.isBlank()) {
-                        uniqueBiotypes.add(mainBiotype.trim().toLowerCase());
+                        uniqueBiotypes.add(mainBiotype.trim().toUpperCase());
                     }
                     for (String syn : synonymList) {
                         if (syn == null || syn.isBlank()) {
@@ -74,7 +74,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                         }
                         String synBiotype = biotypes.getOrDefault(syn, mainBiotype);
                         if (synBiotype != null && !synBiotype.isBlank()) {
-                            uniqueBiotypes.add(synBiotype.trim().toLowerCase());
+                            uniqueBiotypes.add(synBiotype.trim().toUpperCase());
                         }
                     }
                     if (!uniqueBiotypes.isEmpty()) {

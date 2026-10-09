@@ -172,7 +172,7 @@ class KbObjectRepositoryAdapterTest {
         assertThat(biotypesDoc.containsKey("$each")).isTrue();
         BsonArray eachArray = biotypesDoc.getArray("$each");
         assertThat(eachArray).hasSize(1);
-        assertThat(eachArray.get(0).asString().getValue()).isEqualTo("protein");
+        assertThat(eachArray.get(0).asString().getValue()).isEqualTo("PROTEIN");
         assertThat(optionsCaptor.getValue().isUpsert()).isTrue();
     }
 }
