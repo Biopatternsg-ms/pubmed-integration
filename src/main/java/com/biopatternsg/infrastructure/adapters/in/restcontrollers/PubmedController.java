@@ -27,10 +27,12 @@ import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
 import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
+import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
@@ -70,6 +72,7 @@ public class PubmedController {
     private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
     private final UpdateKbObjectRoles updateKbObjectRoles;
     private final GetAlignedResults getAlignedResults;
+    private final GetPublicationsByPmids getPublicationsByPmids;
     private final Executor executor;
     private final SessionUtils sessionUtils;
 
@@ -286,6 +289,14 @@ public class PubmedController {
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
                         .entity(Map.of("message", "Aligned results not found for pipelineId: " + pipelineId))
                         .build());
+    }
+
+    @POST
+    @Path("/publications/by-pmids")
+    public Response getPublicationsByPmids(@Valid GetPublicationsByPmidsRequest request) {
+        log.info("Request to get publications for {} PMIDs", request.pmids() != null ? request.pmids().size() : 0);
+        var publications = getPublicationsByPmids.execute(request.pmids());
+        return Response.ok(publications).build();
     }
 
 }

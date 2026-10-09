@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.repositories;
+package com.biopatternsg.infrastructure.adapters.dtos;
 
-import com.biopatternsg.domain.model.PubtatorResult;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-public interface PubtatorResultRepository {
-    void save(PubtatorResult result);
-    void saveAll(List<PubtatorResult> results);
-    List<String> findExistingPmids(List<String> pmids);
-    PubtatorResult findByPmid(String pmid);
-    List<PubtatorResult> findByPmids(List<String> pmids);
-}
+public record GetPublicationsByPmidsRequest(
+        @NotEmpty(message = "The 'pmids' list cannot be empty")
+        List<String> pmids
+) {}
