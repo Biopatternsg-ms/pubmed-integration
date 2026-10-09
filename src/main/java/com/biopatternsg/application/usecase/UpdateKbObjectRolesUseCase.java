@@ -15,26 +15,30 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.AlignedResultSummary;
-import com.biopatternsg.domain.ports.in.GetAlignedResults;
-import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
+import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class GetAlignedResultsUseCase implements GetAlignedResults {
+public class UpdateKbObjectRolesUseCase implements UpdateKbObjectRoles {
 
-    private final AlignedResultRepository alignedResultRepository;
+    private final KbObjectRepository kbObjectRepository;
 
     @Override
-    public Optional<AlignedResultSummary> execute(String pipelineId) {
-        log.info("Fetching aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
-        return alignedResultRepository.findByPipelineId(pipelineId);
+    public void execute(String pipelineId, Map<String, List<String>> rolesMap) {
+        log.info("Updating roles in kb_objects for pipelineId: {}, total entries: {}",
+                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
+        if (pipelineId == null || pipelineId.isBlank() || rolesMap == null || rolesMap.isEmpty()) {
+            return;
+        }
+        kbObjectRepository.updateRoles(pipelineId, rolesMap);
     }
 }

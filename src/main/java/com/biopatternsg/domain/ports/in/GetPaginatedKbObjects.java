@@ -15,10 +15,9 @@
  */
 package com.biopatternsg.domain.ports.in;
 
-import com.biopatternsg.domain.model.PipelineSynonym;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.model.PaginatedResult;
 
-import java.util.Optional;
-
-public interface GetSynonymsByName {
-    Optional<PipelineSynonym> execute(String pipelineId, String name);
+public interface GetPaginatedKbObjects {
+    PaginatedResult<KbObject> execute(String pipelineId, int page, int size);
 }

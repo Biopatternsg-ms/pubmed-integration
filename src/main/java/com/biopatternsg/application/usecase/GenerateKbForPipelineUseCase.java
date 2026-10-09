@@ -21,13 +21,14 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
 import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb;
 import com.biopatternsg.domain.ports.out.external_repositories.GenerateKbResult;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
     private final BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb;
     private final KbEventRepository kbEventRepository;
     private final ConfigAndControlRepository configAndControlRepository;
-    private final SynonymRepository synonymRepository;
+    private final KbObjectRepository kbObjectRepository;
     private final PubmedResultRepository pubmedResultRepository;
 
     @Inject
@@ -54,7 +55,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb,
             KbEventRepository kbEventRepository,
             ConfigAndControlRepository configAndControlRepository,
-            SynonymRepository synonymRepository,
+            KbObjectRepository kbObjectRepository,
             PubmedResultRepository pubmedResultRepository
     ) {
         this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
@@ -62,13 +63,13 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         this.buildKnowledgeBaseRepoWeb = buildKnowledgeBaseRepoWeb;
         this.kbEventRepository = kbEventRepository;
         this.configAndControlRepository = configAndControlRepository;
-        this.synonymRepository = synonymRepository;
+        this.kbObjectRepository = kbObjectRepository;
         this.pubmedResultRepository = pubmedResultRepository;
     }
 
     @Override
     public void execute(String pipelineId, String userId) {
-        log.info("Starting knowledge base generation pipeline for pipelineId=[{}]", pipelineId);
+        log.info("Starting knowledge base generation pipeline for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
 
         try {
             List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(pipelineId);
@@ -77,10 +78,10 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                     .distinct()
                     .toList();
 
-            log.info("Found [{}] unique numeric PMIDs to process for pipelineId=[{}]", allPmids.size(), pipelineId);
+            log.info("Found [{}] unique numeric PMIDs to process for pipelineId=[{}]", allPmids.size(), LogSanitizer.sanitize(pipelineId));
 
             if (allPmids.isEmpty()) {
-                log.warn("No valid numeric PMIDs found for pipelineId=[{}]. Aborting KB generation.", pipelineId);
+                log.warn("No valid numeric PMIDs found for pipelineId=[{}]. Aborting KB generation.", LogSanitizer.sanitize(pipelineId));
                 configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, null);
                 return;
             }
@@ -109,19 +110,20 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                             pubtatorResult.objects(),
                             pubtatorResult.events()
                      );
-                     log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}].",
+                     log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}], biotypes=[{}].",
                              pmid,
                              kbResult.events() != null ? kbResult.events().size() : 0,
-                             kbResult.synonyms() != null ? kbResult.synonyms().size() : 0);
+                             kbResult.synonyms() != null ? kbResult.synonyms().size() : 0,
+                             kbResult.biotypes() != null ? kbResult.biotypes().size() : 0);
 
-                    // 4. Persistir cada evento en MongoDB
+                    // 4. Persistir cada evento en MongoDB (kb_events)
                     if (kbResult.events() != null) {
                         persistKbEvents(pipelineId, kbResult.events());
                     }
 
-                    // 5. Persistir los sinónimos en MongoDB
+                    // 5. Persistir los objetos de la KB (synonyms + biotypes) en MongoDB (kb_objects)
                     if (kbResult.synonyms() != null) {
-                        synonymRepository.saveSynonyms(pipelineId, kbResult.synonyms());
+                        kbObjectRepository.saveKbObjects(pipelineId, kbResult.synonyms(), kbResult.biotypes());
                     }
 
                     successCount.incrementAndGet();
@@ -133,10 +135,10 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             });
 
             log.info("Finished knowledge base generation pipeline for pipelineId=[{}]. Results: Success=[{}], NotFound=[{}], Errors=[{}]",
-                    pipelineId, successCount.get(), notFoundCount.get(), errorCount.get());
+                    LogSanitizer.sanitize(pipelineId), successCount.get(), notFoundCount.get(), errorCount.get());
 
             pubmedResultRepository.deleteByPipelineId(pipelineId);
-            log.info("Successfully deleted processed pubmed_results for pipelineId=[{}]", pipelineId);
+            log.info("Successfully deleted processed pubmed_results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
 
             java.util.Map<String, String> metrics = java.util.Map.of(
                     "kbEventsGenerated", String.valueOf(successCount.get()),
@@ -146,7 +148,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
             configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, metrics);
         } catch (Exception e) {
-            log.error("Fatal error during KB generation for pipelineId=[{}]", pipelineId, e);
+            log.error("Fatal error during KB generation for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId), e);
             configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId, null);
         }
     }
@@ -162,7 +164,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                         kbEvent.pubmedIds()
                 );
             } catch (Exception e) {
-                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", pipelineId, kbEvent.first(), kbEvent.relation(), kbEvent.second(), e.getMessage(), e);
+                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", LogSanitizer.sanitize(pipelineId), kbEvent.first(), kbEvent.relation(), kbEvent.second(), e.getMessage(), e);
             }
         }
     }

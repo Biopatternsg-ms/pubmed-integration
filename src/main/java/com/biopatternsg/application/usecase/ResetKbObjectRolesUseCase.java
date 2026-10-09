@@ -15,27 +15,26 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.PipelineSynonym;
-import com.biopatternsg.domain.ports.in.GetSynonymsByName;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Optional;
 
 @Slf4j
 @ApplicationScoped
-public class GetSynonymsByNameUseCase implements GetSynonymsByName {
+@RequiredArgsConstructor
+public class ResetKbObjectRolesUseCase implements ResetKbObjectRoles {
 
-    private final SynonymRepository synonymRepository;
-
-    public GetSynonymsByNameUseCase(SynonymRepository synonymRepository) {
-        this.synonymRepository = synonymRepository;
-    }
+    private final KbObjectRepository kbObjectRepository;
 
     @Override
-    public Optional<PipelineSynonym> execute(String pipelineId, String name) {
-        log.info("Executing GetSynonymsByNameUseCase for pipelineId=[{}], name=[{}]", pipelineId, name);
-        return synonymRepository.findByPipelineIdAndName(pipelineId, name);
+    public void execute(String pipelineId) {
+        log.info("Resetting roles in kb_objects for pipelineId: {}", LogSanitizer.sanitize(pipelineId));
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return;
+        }
+        kbObjectRepository.resetRoles(pipelineId);
     }
 }

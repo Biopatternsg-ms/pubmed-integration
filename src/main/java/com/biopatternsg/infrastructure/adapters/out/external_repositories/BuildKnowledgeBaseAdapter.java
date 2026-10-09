@@ -61,7 +61,7 @@ public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
         GenerateKbResponse response = httpClient.generateKb(request);
 
         if (response == null) {
-            return new GenerateKbResult(Collections.emptyList(), Collections.emptyMap());
+            return new GenerateKbResult(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         }
 
         List<KbEvent> domainEvents = Collections.emptyList();
@@ -80,7 +80,8 @@ public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
 
         return new GenerateKbResult(
                 domainEvents,
-                response.synonyms() != null ? response.synonyms() : Collections.emptyMap()
+                response.synonyms() != null ? response.synonyms() : Collections.emptyMap(),
+                response.biotypes() != null ? response.biotypes() : Collections.emptyMap()
         );
     }
 }

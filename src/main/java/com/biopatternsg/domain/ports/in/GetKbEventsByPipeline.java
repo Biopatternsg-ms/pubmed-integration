@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.model;
+package com.biopatternsg.domain.ports.in;
+
+import com.biopatternsg.domain.model.KbEvent;
 
 import java.util.List;
 
-public record PipelineSynonym(
-        String name,
-        List<String> synonyms
-) {}
+public interface GetKbEventsByPipeline {
+    List<KbEvent> execute(String pipelineId);
+}

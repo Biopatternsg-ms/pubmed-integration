@@ -15,7 +15,7 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.mongo.SynonymCollection;
+import com.biopatternsg.mongo.KbObjectCollection;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
@@ -35,62 +35,60 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SynonymRepositoryAdapter - MongoDB Query rules for synonyms")
-class SynonymRepositoryAdapterTest {
+@DisplayName("KbObjectRepositoryAdapter - MongoDB Query rules for kb_objects")
+class KbObjectRepositoryAdapterTest {
 
     private static final String PIPELINE_ID = "pipeline-abc";
 
     @Mock
-    private MongoCollection<SynonymCollection> mockCollection;
+    private MongoCollection<KbObjectCollection> mockCollection;
 
-    private SynonymRepositoryAdapter adapter;
+    private KbObjectRepositoryAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = spy(new SynonymRepositoryAdapter());
+        adapter = spy(new KbObjectRepositoryAdapter());
         lenient().doReturn(mockCollection).when(adapter).mongoCollection();
     }
 
     @Test
-    @DisplayName("When synonyms map is null or empty, saveSynonyms should do nothing")
-    void saveSynonyms_withNullOrEmptyMap_shouldDoNothing() {
-        adapter.saveSynonyms(PIPELINE_ID, null);
-        adapter.saveSynonyms(PIPELINE_ID, Collections.emptyMap());
+    @DisplayName("When synonyms map is null or empty, saveKbObjects should do nothing")
+    void saveKbObjects_withNullOrEmptyMap_shouldDoNothing() {
+        adapter.saveKbObjects(PIPELINE_ID, null);
+        adapter.saveKbObjects(PIPELINE_ID, Collections.emptyMap());
 
         verifyNoInteractions(mockCollection);
     }
 
     @Test
     @DisplayName("When map contains entry with null or empty list, it should skip it")
-    void saveSynonyms_withEmptySynonymsList_shouldSkipEntry() {
+    void saveKbObjects_withEmptySynonymsList_shouldSkipEntry() {
         Map<String, List<String>> synonyms = Map.of(
                 "BRCA1", Collections.emptyList()
         );
 
-        adapter.saveSynonyms(PIPELINE_ID, synonyms);
+        adapter.saveKbObjects(PIPELINE_ID, synonyms);
 
         verifyNoInteractions(mockCollection);
     }
 
     @Test
-    @DisplayName("When synonyms are saved, it should generate proper MongoDB Filters, Updates, and Upsert options")
-    void saveSynonyms_shouldGenerateProperBsonOperations() {
+    @DisplayName("When KB objects are saved without biotypes, it should generate proper MongoDB Filters, Updates, and Upsert options")
+    void saveKbObjects_shouldGenerateProperBsonOperations() {
         // Arrange
         String name = "BRCA1";
         List<String> synonymList = List.of("BR1", "RNF53");
         Map<String, List<String>> synonymsMap = Map.of(name, synonymList);
 
-        // Capture BSON parameters to verify exact database query structure
         ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
         ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
         ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
 
         // Act
-        adapter.saveSynonyms(PIPELINE_ID, synonymsMap);
+        adapter.saveKbObjects(PIPELINE_ID, synonymsMap);
 
         // Assert
         verify(mockCollection, times(1)).updateOne(
@@ -99,7 +97,6 @@ class SynonymRepositoryAdapterTest {
                 optionsCaptor.capture()
         );
 
-        // 1. Verify Filters: Filter must be an AND condition of pipelineId and name
         BsonDocument filterDoc = filterCaptor.getValue().toBsonDocument(
                 BsonDocument.class,
                 MongoClientSettings.getDefaultCodecRegistry()
@@ -114,7 +111,6 @@ class SynonymRepositoryAdapterTest {
         assertThat(firstFilter.getString("pipelineId").getValue()).isEqualTo(PIPELINE_ID);
         assertThat(secondFilter.getString("name").getValue()).isEqualTo(name);
 
-        // 2. Verify Updates: Update must use $addToSet with $each to prevent duplicates
         BsonDocument updateDoc = updateCaptor.getValue().toBsonDocument(
                 BsonDocument.class,
                 MongoClientSettings.getDefaultCodecRegistry()
@@ -130,8 +126,53 @@ class SynonymRepositoryAdapterTest {
         assertThat(eachArray.get(0).asString().getValue()).isEqualTo("BR1");
         assertThat(eachArray.get(1).asString().getValue()).isEqualTo("RNF53");
 
-        // 3. Verify Options: Must be upsert = true
         UpdateOptions options = optionsCaptor.getValue();
         assertThat(options.isUpsert()).isTrue();
+    }
+
+    @Test
+    @DisplayName("When synonyms and biotypes are saved, it should use $addToSet for synonyms and $addToSet for unique biotypes without duplicates")
+    void saveKbObjects_withBiotype_shouldGenerateAddToSetForUniqueBiotypes() {
+        // Arrange
+        String name = "CXCR4";
+        List<String> synonymList = List.of("CXCR4", "LCR-1", "CD184");
+        Map<String, List<String>> synonymsMap = Map.of(name, synonymList);
+        Map<String, String> biotypesMap = Map.of(
+                "CXCR4", "protein",
+                "LCR-1", "protein",
+                "CD184", "protein",
+                "AMPICILLIN", "ligand"
+        );
+
+        ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
+
+        // Act
+        adapter.saveKbObjects(PIPELINE_ID, synonymsMap, biotypesMap);
+
+        // Assert — Only CXCR4 synonyms are persisted; AMPICILLIN is ignored; unique biotypes is only ["protein"]
+        verify(mockCollection, times(1)).updateOne(
+                filterCaptor.capture(),
+                updateCaptor.capture(),
+                optionsCaptor.capture()
+        );
+
+        BsonDocument updateDoc = updateCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        assertThat(updateDoc.containsKey("$addToSet")).isTrue();
+        assertThat(updateDoc.containsKey("$set")).isFalse();
+        BsonDocument addToSetDoc = updateDoc.getDocument("$addToSet");
+        assertThat(addToSetDoc.containsKey("synonyms")).isTrue();
+        assertThat(addToSetDoc.containsKey("biotypes")).isTrue();
+
+        BsonDocument biotypesDoc = addToSetDoc.getDocument("biotypes");
+        assertThat(biotypesDoc.containsKey("$each")).isTrue();
+        BsonArray eachArray = biotypesDoc.getArray("$each");
+        assertThat(eachArray).hasSize(1);
+        assertThat(eachArray.get(0).asString().getValue()).isEqualTo("PROTEIN");
+        assertThat(optionsCaptor.getValue().isUpsert()).isTrue();
     }
 }

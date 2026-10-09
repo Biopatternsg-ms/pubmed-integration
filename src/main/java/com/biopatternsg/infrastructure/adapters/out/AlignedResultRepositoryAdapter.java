@@ -19,6 +19,7 @@ import com.biopatternsg.domain.model.AlignedAs;
 import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.AlignedResultSummary;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.mongo.AlignedResultCollection;
 import com.biopatternsg.mongo.AlignedAsEmbedded;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
@@ -65,9 +66,9 @@ public class AlignedResultRepositoryAdapter implements AlignedResultRepository, 
             } else {
                 update(entity);
             }
-            log.info("AlignedResult successfully saved/updated for pipelineId=[{}]", alignedResult.pipelineId());
+            log.info("AlignedResult successfully saved/updated for pipelineId=[{}]", LogSanitizer.sanitize(alignedResult.pipelineId()));
         } catch (Exception e) {
-            log.error("Error saving AlignedResult for pipelineId=[{}]: {}", alignedResult.pipelineId(), e.getMessage(), e);
+            log.error("Error saving AlignedResult for pipelineId=[{}]: {}", LogSanitizer.sanitize(alignedResult.pipelineId()), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -101,7 +102,7 @@ public class AlignedResultRepositoryAdapter implements AlignedResultRepository, 
 
             return Optional.of(summary);
         } catch (Exception e) {
-            log.error("Error fetching AlignedResult for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error fetching AlignedResult for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }

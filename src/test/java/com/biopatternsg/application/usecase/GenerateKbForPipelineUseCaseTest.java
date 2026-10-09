@@ -20,10 +20,10 @@ import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
 import com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb;
 import com.biopatternsg.domain.ports.out.external_repositories.GenerateKbResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,7 @@ import java.util.Map;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("GenerateKbForPipelineUseCase - Knowledge base and synonym generation process")
+@DisplayName("GenerateKbForPipelineUseCase - Knowledge base events and objects generation process")
 class GenerateKbForPipelineUseCaseTest {
 
     private static final String PIPELINE_ID = "pipeline-123";
@@ -52,7 +52,7 @@ class GenerateKbForPipelineUseCaseTest {
     @Mock private BuildKnowledgeBaseRepoWeb buildKnowledgeBaseRepoWeb;
     @Mock private KbEventRepository kbEventRepository;
     @Mock private ConfigAndControlRepository configAndControlRepository;
-    @Mock private SynonymRepository synonymRepository;
+    @Mock private KbObjectRepository kbObjectRepository;
     @Mock private PubmedResultRepository pubmedResultRepository;
 
     private GenerateKbForPipelineUseCase useCase;
@@ -65,14 +65,14 @@ class GenerateKbForPipelineUseCaseTest {
                 buildKnowledgeBaseRepoWeb,
                 kbEventRepository,
                 configAndControlRepository,
-                synonymRepository,
+                kbObjectRepository,
                 pubmedResultRepository
         );
     }
 
     @Test
-    @DisplayName("When synonyms are present in external KB response, they should be persisted in SynonymRepository")
-    void execute_withSynonyms_shouldPersistSynonyms() {
+    @DisplayName("When synonyms and biotypes are present in external KB response, they should be persisted in kb_objects")
+    void execute_withKbObjects_shouldPersistKbObjects() {
         // Arrange
         when(pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(PIPELINE_ID))
                 .thenReturn(List.of(PMID));
@@ -90,9 +90,13 @@ class GenerateKbForPipelineUseCaseTest {
         Map<String, List<String>> synonymsMap = Map.of(
                 "BRCA1", List.of("BR1", "RNF53", "Breast Cancer 1")
         );
+        Map<String, String> biotypesMap = Map.of(
+                "BRCA1", "protein"
+        );
         GenerateKbResult mockKbResult = new GenerateKbResult(
                 Collections.emptyList(),
-                synonymsMap
+                synonymsMap,
+                biotypesMap
         );
 
         when(buildKnowledgeBaseRepoWeb.generateKnowledgeBase(
@@ -108,7 +112,7 @@ class GenerateKbForPipelineUseCaseTest {
         useCase.execute(PIPELINE_ID, USER_ID);
 
         // Assert
-        verify(synonymRepository, times(1)).saveSynonyms(PIPELINE_ID, synonymsMap);
+        verify(kbObjectRepository, times(1)).saveKbObjects(PIPELINE_ID, synonymsMap, biotypesMap);
         verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
         verify(configAndControlRepository, times(1)).updateStep(
                 eq(PIPELINE_ID),
@@ -130,7 +134,7 @@ class GenerateKbForPipelineUseCaseTest {
         useCase.execute(PIPELINE_ID, USER_ID);
 
         // Assert
-        verifyNoInteractions(pubtatorResultRepository, buildKnowledgeBaseRepoWeb, synonymRepository, pubmedResultRepository);
+        verifyNoInteractions(pubtatorResultRepository, buildKnowledgeBaseRepoWeb, kbObjectRepository, pubmedResultRepository);
         verify(configAndControlRepository, times(1)).updateStep(
                 eq(PIPELINE_ID),
                 eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),

@@ -20,9 +20,13 @@ import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
 import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
-import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
-import com.biopatternsg.domain.ports.in.GetSynonymsByName;
+import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
+import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
+import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
+import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
+import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
+import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
@@ -33,7 +37,9 @@ import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsReque
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -43,8 +49,10 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.infrastructure.session.SessionUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -60,9 +68,13 @@ public class PubmedController {
     private final SearchPubtatorByPmids searchPubtatorByPmids;
     private final GenerateKbForPipeline generateKbForPipeline;
     private final GenerateAlignedObjects generateAlignedObjects;
-    private final GetPaginatedSynonyms getPaginatedSynonyms;
-    private final GetSynonymsByName getSynonymsByName;
+    private final GetPaginatedKbObjects getPaginatedKbObjects;
+    private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
+    private final GetKbEventsByPipeline getKbEventsByPipeline;
+    private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
+    private final UpdateKbObjectRoles updateKbObjectRoles;
+    private final ResetKbObjectRoles resetKbObjectRoles;
     private final GetAlignedResults getAlignedResults;
     private final GetPublicationsByPmids getPublicationsByPmids;
     private final Executor executor;
@@ -172,15 +184,74 @@ public class PubmedController {
     }
 
     @GET
+    @Path("/kb-objects/{pipelineId}")
+    public Response getKbObjects(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        log.info("Request to get kb_objects for pipelineId=[{}], page=[{}], size=[{}]",
+                LogSanitizer.sanitize(pipelineId), page, size);
+        var paginatedResult = getPaginatedKbObjects.execute(pipelineId, page, size);
+        return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/by-name/{name}")
+    public Response getKbObjectByName(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("name") String name
+    ) {
+        log.info("Request to get kb_object for pipelineId=[{}], name=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'name' is required"))
+                    .build();
+        }
+        return getKbObjectByName.execute(pipelineId, name)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "KB object not found for pipelineId: " + pipelineId + " and name: " + name))
+                        .build());
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/all")
+    public Response getAllKbObjects(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get all kb_objects for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        var objects = getAllKbObjectsByPipeline.execute(pipelineId);
+        return Response.ok(objects).build();
+    }
+
+    @PATCH
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response updateKbObjectRoles(
+            @PathParam("pipelineId") String pipelineId,
+            Map<String, List<String>> rolesMap
+    ) {
+        log.info("Request to update kb_object roles for pipelineId=[{}], count=[{}]",
+                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
+        updateKbObjectRoles.execute(pipelineId, rolesMap);
+        return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
+    }
+
+    @DELETE
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response resetKbObjectRoles(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to reset kb_object roles for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        resetKbObjectRoles.execute(pipelineId);
+        return Response.ok(Map.of("message", "Roles reset successfully in kb_objects")).build();
+    }
+
+    @GET
     @Path("/synonyms/{pipelineId}")
     public Response getSynonyms(
             @PathParam("pipelineId") String pipelineId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("50") int size
     ) {
-        log.info("Request to get synonyms for pipelineId=[{}], page=[{}], size=[{}]", pipelineId, page, size);
-        var paginatedResult = getPaginatedSynonyms.execute(pipelineId, page, size);
-        return Response.ok(paginatedResult).build();
+        return getKbObjects(pipelineId, page, size);
     }
 
     @GET
@@ -189,17 +260,7 @@ public class PubmedController {
             @PathParam("pipelineId") String pipelineId,
             @PathParam("name") String name
     ) {
-        log.info("Request to get synonyms for pipelineId=[{}], name=[{}]", pipelineId, name);
-        if (name == null || name.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'name' is required"))
-                    .build();
-        }
-        return getSynonymsByName.execute(pipelineId, name)
-                .map(result -> Response.ok(result).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("message", "Synonyms not found for pipelineId: " + pipelineId + " and name: " + name))
-                        .build());
+        return getKbObjectByName(pipelineId, name);
     }
 
     @GET
@@ -208,7 +269,8 @@ public class PubmedController {
             @PathParam("pipelineId") String pipelineId,
             @PathParam("term") String term
     ) {
-        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]", pipelineId, term);
+        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term));
         if (term == null || term.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("message", "Path parameter 'term' is required"))
@@ -219,9 +281,24 @@ public class PubmedController {
     }
 
     @GET
+    @Path("/kb-events/{pipelineId}")
+    public Response getKbEventsByPipeline(
+            @PathParam("pipelineId") String pipelineId
+    ) {
+        log.info("Request to get all kb_events for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        var events = getKbEventsByPipeline.execute(pipelineId);
+        return Response.ok(events).build();
+    }
+
+    @GET
     @Path("/aligned-results/{pipelineId}")
     public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
-        log.info("Request to get aligned results for pipelineId=[{}]", pipelineId);
+        log.info("Request to get aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         return getAlignedResults.execute(pipelineId)
                 .map(result -> Response.ok(result).build())
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)

@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.external_repositories;
+package com.biopatternsg.domain.model;
 
-import com.biopatternsg.domain.model.KbEvent;
-
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-public record GenerateKbResult(
-        List<KbEvent> events,
-        Map<String, List<String>> synonyms,
-        Map<String, String> biotypes
+public record KbObject(
+        String name,
+        List<String> synonyms,
+        List<String> biotypes,
+        List<String> roles
 ) {
-    public GenerateKbResult(List<KbEvent> events, Map<String, List<String>> synonyms) {
-        this(events, synonyms, java.util.Collections.emptyMap());
+    public KbObject(String name, List<String> synonyms, List<String> biotypes) {
+        this(name, synonyms, biotypes, Collections.emptyList());
+    }
+
+    public KbObject(String name, List<String> synonyms) {
+        this(name, synonyms, Collections.emptyList(), Collections.emptyList());
     }
 }

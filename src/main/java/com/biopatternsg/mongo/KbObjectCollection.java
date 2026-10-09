@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.external_repositories;
+package com.biopatternsg.mongo;
 
-import com.biopatternsg.domain.model.KbEvent;
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.Map;
 
-public record GenerateKbResult(
-        List<KbEvent> events,
-        Map<String, List<String>> synonyms,
-        Map<String, String> biotypes
-) {
-    public GenerateKbResult(List<KbEvent> events, Map<String, List<String>> synonyms) {
-        this(events, synonyms, java.util.Collections.emptyMap());
-    }
+@Setter
+@Getter
+@MongoEntity(collection = "kb_objects")
+public class KbObjectCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private String name;
+    private List<String> synonyms;
+    private List<String> biotypes;
+    private List<String> roles;
 }

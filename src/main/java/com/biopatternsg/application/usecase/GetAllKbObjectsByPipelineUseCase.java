@@ -15,26 +15,30 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.AlignedResultSummary;
-import com.biopatternsg.domain.ports.in.GetAlignedResults;
-import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Optional;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class GetAlignedResultsUseCase implements GetAlignedResults {
+public class GetAllKbObjectsByPipelineUseCase implements GetAllKbObjectsByPipeline {
 
-    private final AlignedResultRepository alignedResultRepository;
+    private final KbObjectRepository kbObjectRepository;
 
     @Override
-    public Optional<AlignedResultSummary> execute(String pipelineId) {
-        log.info("Fetching aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
-        return alignedResultRepository.findByPipelineId(pipelineId);
+    public List<KbObject> execute(String pipelineId) {
+        log.info("Retrieving all KB objects for pipelineId: {}", LogSanitizer.sanitize(pipelineId));
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Collections.emptyList();
+        }
+        return kbObjectRepository.findAllByPipelineId(pipelineId);
     }
 }

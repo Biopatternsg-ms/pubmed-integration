@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.domain.ports.out.external_repositories;
+package com.biopatternsg.domain.util;
 
-import com.biopatternsg.domain.model.KbEvent;
+public final class LogSanitizer {
 
-import java.util.List;
-import java.util.Map;
+    private LogSanitizer() {
+    }
 
-public record GenerateKbResult(
-        List<KbEvent> events,
-        Map<String, List<String>> synonyms,
-        Map<String, String> biotypes
-) {
-    public GenerateKbResult(List<KbEvent> events, Map<String, List<String>> synonyms) {
-        this(events, synonyms, java.util.Collections.emptyMap());
+    public static String sanitize(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        return String.valueOf(value).replace('\r', '_').replace('\n', '_');
     }
 }

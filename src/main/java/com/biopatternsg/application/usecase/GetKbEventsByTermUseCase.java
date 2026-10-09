@@ -18,6 +18,7 @@ package com.biopatternsg.application.usecase;
 import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +37,8 @@ public class GetKbEventsByTermUseCase implements GetKbEventsByTerm {
 
     @Override
     public List<KbEvent> execute(String pipelineId, String term) {
-        log.info("Executing GetKbEventsByTermUseCase for pipelineId=[{}], term=[{}]", pipelineId, term);
+        log.info("Executing GetKbEventsByTermUseCase for pipelineId=[{}], term=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term));
         if (term == null || term.isBlank()) {
             return Collections.emptyList();
         }

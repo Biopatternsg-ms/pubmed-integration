@@ -15,26 +15,29 @@
  */
 package com.biopatternsg.application.usecase;
 
-import com.biopatternsg.domain.model.AlignedResultSummary;
-import com.biopatternsg.domain.ports.in.GetAlignedResults;
-import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.ports.in.GetKbObjectByName;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
 @Slf4j
 @ApplicationScoped
-@RequiredArgsConstructor
-public class GetAlignedResultsUseCase implements GetAlignedResults {
+public class GetKbObjectByNameUseCase implements GetKbObjectByName {
 
-    private final AlignedResultRepository alignedResultRepository;
+    private final KbObjectRepository kbObjectRepository;
+
+    public GetKbObjectByNameUseCase(KbObjectRepository kbObjectRepository) {
+        this.kbObjectRepository = kbObjectRepository;
+    }
 
     @Override
-    public Optional<AlignedResultSummary> execute(String pipelineId) {
-        log.info("Fetching aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
-        return alignedResultRepository.findByPipelineId(pipelineId);
+    public Optional<KbObject> execute(String pipelineId, String name) {
+        log.info("Executing GetKbObjectByNameUseCase for pipelineId=[{}], name=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
+        return kbObjectRepository.findByPipelineIdAndName(pipelineId, name);
     }
 }

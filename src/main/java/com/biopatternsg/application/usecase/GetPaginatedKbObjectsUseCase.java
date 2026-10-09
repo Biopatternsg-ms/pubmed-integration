@@ -15,21 +15,21 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.model.PaginatedResult;
-import com.biopatternsg.domain.model.PipelineSynonym;
-import com.biopatternsg.domain.ports.in.GetPaginatedSynonyms;
-import com.biopatternsg.domain.ports.out.repositories.SynonymRepository;
+import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
+import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 
 @ApplicationScoped
 @RequiredArgsConstructor
-public class GetPaginatedSynonymsUseCase implements GetPaginatedSynonyms {
+public class GetPaginatedKbObjectsUseCase implements GetPaginatedKbObjects {
 
-    private final SynonymRepository synonymRepository;
+    private final KbObjectRepository kbObjectRepository;
 
     @Override
-    public PaginatedResult<PipelineSynonym> execute(String pipelineId, int page, int size) {
-        return synonymRepository.findByPipelineId(pipelineId, page, size);
+    public PaginatedResult<KbObject> execute(String pipelineId, int page, int size) {
+        return kbObjectRepository.findByPipelineId(pipelineId, page, size);
     }
 }
