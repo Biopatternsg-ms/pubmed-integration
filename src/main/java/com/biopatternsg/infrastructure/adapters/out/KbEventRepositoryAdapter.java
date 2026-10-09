@@ -17,6 +17,7 @@ package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.mongo.KbEventCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.Filters;
@@ -40,7 +41,9 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
                     pipelineId, first, relation, second).firstResult();
             return Optional.ofNullable(doc).map(this::toDomain);
         } catch (Exception e) {
-            log.error("Error finding KbEvent [{}, {},{},{}]: {}", pipelineId, first, relation, second, e.getMessage(), e);
+            log.error("Error finding KbEvent [{}, {},{},{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(first),
+                    LogSanitizer.sanitize(relation), LogSanitizer.sanitize(second), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -61,9 +64,13 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
                     Updates.addEachToSet("pubmedIds", pubmedIds),
                     new com.mongodb.client.model.UpdateOptions().upsert(true)
             );
-            log.debug("KbEvent upserted: [{}, [{},{},{}]] with PMIDs {}", pipelineId, first, relation, second, pubmedIds);
+            log.debug("KbEvent upserted: [{}, [{},{},{}]] with PMIDs {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(first),
+                    LogSanitizer.sanitize(relation), LogSanitizer.sanitize(second), pubmedIds);
         } catch (Exception e) {
-            log.error("Error upserting KbEvent [{}, [{},{},{}]]: {}", pipelineId, first, relation, second, e.getMessage(), e);
+            log.error("Error upserting KbEvent [{}, [{},{},{}]]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(first),
+                    LogSanitizer.sanitize(relation), LogSanitizer.sanitize(second), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -81,7 +88,8 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
                     .map(this::toDomain)
                     .collect(java.util.stream.Collectors.toList());
         } catch (Exception e) {
-            log.error("Error finding KbEvents for pipelineId=[{}] and term=[{}]: {}", pipelineId, term, e.getMessage(), e);
+            log.error("Error finding KbEvents for pipelineId=[{}] and term=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -97,7 +105,8 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
                     .map(this::toDomain)
                     .collect(java.util.stream.Collectors.toList());
         } catch (Exception e) {
-            log.error("Error finding all KbEvents for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error finding all KbEvents for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }

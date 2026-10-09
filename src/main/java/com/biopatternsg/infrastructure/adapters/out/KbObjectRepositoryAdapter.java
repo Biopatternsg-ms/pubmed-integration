@@ -18,6 +18,7 @@ package com.biopatternsg.infrastructure.adapters.out;
 import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.mongo.KbObjectCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.BulkWriteOptions;
@@ -94,9 +95,11 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                         updateOperation,
                         new UpdateOptions().upsert(true)
                 );
-                log.debug("KB object upserted for pipelineId=[{}], name=[{}]: synonyms={}", pipelineId, name, synonymList);
+                log.debug("KB object upserted for pipelineId=[{}], name=[{}]: synonyms={}",
+                        LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), synonymList);
             } catch (Exception e) {
-                log.error("Error upserting KB object for [{}, {}]: {}", pipelineId, name, e.getMessage(), e);
+                log.error("Error upserting KB object for [{}, {}]: {}",
+                        LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);
                 throw new InternalServerError(e);
             }
         }
@@ -113,7 +116,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                             (existing, replacement) -> existing
                     ));
         } catch (Exception e) {
-            log.error("Error finding all KB object synonyms for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error finding all KB object synonyms for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -137,7 +141,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
 
             return new PaginatedResult<>(items, totalItems, totalPages, page, size);
         } catch (Exception e) {
-            log.error("Error finding paginated KB objects for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error finding paginated KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -155,7 +159,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     ))
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("Error finding all KB objects for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error finding all KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -187,7 +191,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                             col.getRoles() != null ? col.getRoles() : Collections.emptyList()
                     ));
         } catch (Exception e) {
-            log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}", pipelineId, name, e.getMessage(), e);
+            log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
@@ -212,9 +217,9 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                 ));
             }
             mongoCollection().bulkWrite(writes, new BulkWriteOptions().ordered(false));
-            log.info("Bulk updated roles for {} objects in pipelineId=[{}]", roles.size(), pipelineId);
+            log.info("Bulk updated roles for {} objects in pipelineId=[{}]", roles.size(), LogSanitizer.sanitize(pipelineId));
         } catch (Exception e) {
-            log.error("Error updating roles for pipelineId=[{}]: {}", pipelineId, e.getMessage(), e);
+            log.error("Error updating roles for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
     }
