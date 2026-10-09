@@ -47,4 +47,6 @@ public interface KbObjectRepository {
     Optional<KbObject> findByPipelineIdAndName(String pipelineId, String name);
 
     void updateRoles(String pipelineId, Map<String, List<String>> roles);
+
+    void resetRoles(String pipelineId);
 }

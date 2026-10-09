@@ -223,4 +223,21 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             throw new InternalServerError(e);
         }
     }
+
+    @Override
+    public void resetRoles(String pipelineId) {
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return;
+        }
+        try {
+            mongoCollection().updateMany(
+                    Filters.eq("pipelineId", pipelineId),
+                    Updates.unset("roles")
+            );
+            log.info("Reset roles for all objects in pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        } catch (Exception e) {
+            log.error("Error resetting roles for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+            throw new InternalServerError(e);
+        }
+    }
 }

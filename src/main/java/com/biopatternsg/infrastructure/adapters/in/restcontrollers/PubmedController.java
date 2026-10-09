@@ -26,6 +26,7 @@ import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
 import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
+import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
@@ -36,6 +37,7 @@ import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsReque
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
@@ -72,6 +74,7 @@ public class PubmedController {
     private final GetKbEventsByPipeline getKbEventsByPipeline;
     private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
     private final UpdateKbObjectRoles updateKbObjectRoles;
+    private final ResetKbObjectRoles resetKbObjectRoles;
     private final GetAlignedResults getAlignedResults;
     private final GetPublicationsByPmids getPublicationsByPmids;
     private final Executor executor;
@@ -231,6 +234,14 @@ public class PubmedController {
                 LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
         updateKbObjectRoles.execute(pipelineId, rolesMap);
         return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
+    }
+
+    @DELETE
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response resetKbObjectRoles(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to reset kb_object roles for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        resetKbObjectRoles.execute(pipelineId);
+        return Response.ok(Map.of("message", "Roles reset successfully in kb_objects")).build();
     }
 
     @GET
