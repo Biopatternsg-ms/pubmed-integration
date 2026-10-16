@@ -30,6 +30,7 @@ public class PubtatorResultCollection extends PanacheMongoEntity {
     private String text;
     private List<PubtatorObject> objects;
     private List<PubtatorEvent> events;
+    private KnowledgeBase knowledgeBase;
 
     @Setter
     @Getter
@@ -57,5 +58,28 @@ public class PubtatorResultCollection extends PanacheMongoEntity {
         private String relationType;
         private String role1;
         private String role2;
+    }
+
+    @Setter
+    @Getter
+    public static class KnowledgeBase {
+        private List<KbEventItem> event;
+        private List<KbObjectItem> objects;
+    }
+
+    @Setter
+    @Getter
+    public static class KbEventItem {
+        private String first;
+        private String relation;
+        private String second;
+    }
+
+    @Setter
+    @Getter
+    public static class KbObjectItem {
+        private String name;
+        private List<String> synonyms;
+        private List<String> biotypes;
     }
 }

@@ -19,6 +19,8 @@ import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.mongo.PubtatorResultCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +55,21 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
     }
 
     @Override
+    public void updateKnowledgeBase(String pmid, PubtatorResult.KnowledgeBase knowledgeBase) {
+        if (pmid == null || pmid.isBlank() || knowledgeBase == null) {
+            return;
+        }
+        try {
+            mongoCollection().updateOne(
+                    Filters.eq("pmid", pmid),
+                    Updates.set("knowledgeBase", toKnowledgeBaseCollection(knowledgeBase))
+            );
+        } catch (Exception e) {
+            throw new InternalServerError(e);
+        }
+    }
+
+    @Override
     public List<String> findExistingPmids(List<String> pmids) {
         if (pmids == null || pmids.isEmpty()) {
             return Collections.emptyList();
@@ -68,13 +85,17 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
         doc.setTitle(result.title());
         doc.setText(result.text());
 
-        doc.setObjects(result.objects().stream()
+        doc.setObjects(result.objects() == null ? Collections.emptyList() : result.objects().stream()
                 .map(this::toObjectCollection)
                 .toList());
 
-        doc.setEvents(result.events().stream()
+        doc.setEvents(result.events() == null ? Collections.emptyList() : result.events().stream()
                 .map(this::toEventCollection)
                 .toList());
+
+        if (result.knowledgeBase() != null) {
+            doc.setKnowledgeBase(toKnowledgeBaseCollection(result.knowledgeBase()));
+        }
 
         return doc;
     }
@@ -88,7 +109,7 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
         doc.setType(obj.type());
         doc.setBiotype(obj.biotype());
         doc.setText(obj.text());
-        doc.setLocations(obj.locations().stream()
+        doc.setLocations(obj.locations() == null ? Collections.emptyList() : obj.locations().stream()
                 .map(loc -> {
                     PubtatorResultCollection.Location l = new PubtatorResultCollection.Location();
                     l.setOffset(loc.offset());
@@ -104,6 +125,33 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
         doc.setRelationType(event.relationType());
         doc.setRole1(event.role1());
         doc.setRole2(event.role2());
+        return doc;
+    }
+
+    private PubtatorResultCollection.KnowledgeBase toKnowledgeBaseCollection(PubtatorResult.KnowledgeBase kb) {
+        PubtatorResultCollection.KnowledgeBase doc = new PubtatorResultCollection.KnowledgeBase();
+        doc.setEvent(kb.event() == null ? Collections.emptyList() : kb.event().stream()
+                .map(this::toKbEventItemCollection)
+                .toList());
+        doc.setObjects(kb.objects() == null ? Collections.emptyList() : kb.objects().stream()
+                .map(this::toKbObjectItemCollection)
+                .toList());
+        return doc;
+    }
+
+    private PubtatorResultCollection.KbEventItem toKbEventItemCollection(PubtatorResult.KbEventItem item) {
+        PubtatorResultCollection.KbEventItem doc = new PubtatorResultCollection.KbEventItem();
+        doc.setFirst(item.first());
+        doc.setRelation(item.relation());
+        doc.setSecond(item.second());
+        return doc;
+    }
+
+    private PubtatorResultCollection.KbObjectItem toKbObjectItemCollection(PubtatorResult.KbObjectItem item) {
+        PubtatorResultCollection.KbObjectItem doc = new PubtatorResultCollection.KbObjectItem();
+        doc.setName(item.name());
+        doc.setSynonyms(item.synonyms() != null ? item.synonyms() : Collections.emptyList());
+        doc.setBiotypes(item.biotypes() != null ? item.biotypes() : Collections.emptyList());
         return doc;
     }
 
@@ -137,12 +185,16 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
                 .map(this::toEventDomain)
                 .toList();
 
+        PubtatorResult.KnowledgeBase knowledgeBase = doc.getKnowledgeBase() == null ? null :
+                toKnowledgeBaseDomain(doc.getKnowledgeBase());
+
         return new PubtatorResult(
                 doc.getPmid() != null ? doc.getPmid() : "",
                 doc.getTitle() != null ? doc.getTitle() : "",
                 doc.getText() != null ? doc.getText() : "",
                 objects,
-                events
+                events,
+                knowledgeBase
         );
     }
 
@@ -168,6 +220,36 @@ public class PubtatorResultRepositoryAdapter implements PubtatorResultRepository
                 event.getRelationType() != null ? event.getRelationType() : "",
                 event.getRole1() != null ? event.getRole1() : "",
                 event.getRole2() != null ? event.getRole2() : ""
+        );
+    }
+
+    private PubtatorResult.KnowledgeBase toKnowledgeBaseDomain(PubtatorResultCollection.KnowledgeBase kb) {
+        List<PubtatorResult.KbEventItem> eventItems = kb.getEvent() == null ? Collections.emptyList() :
+                kb.getEvent().stream()
+                        .map(this::toKbEventItemDomain)
+                        .toList();
+
+        List<PubtatorResult.KbObjectItem> objectItems = kb.getObjects() == null ? Collections.emptyList() :
+                kb.getObjects().stream()
+                        .map(this::toKbObjectItemDomain)
+                        .toList();
+
+        return new PubtatorResult.KnowledgeBase(eventItems, objectItems);
+    }
+
+    private PubtatorResult.KbEventItem toKbEventItemDomain(PubtatorResultCollection.KbEventItem item) {
+        return new PubtatorResult.KbEventItem(
+                item.getFirst() != null ? item.getFirst() : "",
+                item.getRelation() != null ? item.getRelation() : "",
+                item.getSecond() != null ? item.getSecond() : ""
+        );
+    }
+
+    private PubtatorResult.KbObjectItem toKbObjectItemDomain(PubtatorResultCollection.KbObjectItem item) {
+        return new PubtatorResult.KbObjectItem(
+                item.getName() != null ? item.getName() : "",
+                item.getSynonyms() != null ? item.getSynonyms() : Collections.emptyList(),
+                item.getBiotypes() != null ? item.getBiotypes() : Collections.emptyList()
         );
     }
 }
