@@ -17,6 +17,7 @@ package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.model.PaginatedResult;
+import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.mongo.KbObjectCollection;
@@ -34,11 +35,9 @@ import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,12 +49,21 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
         if (synonyms == null || synonyms.isEmpty()) {
             return;
         }
+        List<PubtatorResult.KbObjectItem> objects = PubtatorResult.KnowledgeBase.buildObjects(synonyms, biotypes);
+        saveKbObjectItems(pipelineId, objects);
+    }
 
-        for (Map.Entry<String, List<String>> entry : synonyms.entrySet()) {
-            String name = entry.getKey();
-            List<String> synonymList = entry.getValue();
+    @Override
+    public void saveKbObjectItems(String pipelineId, List<PubtatorResult.KbObjectItem> objects) {
+        if (objects == null || objects.isEmpty()) {
+            return;
+        }
 
-            if (synonymList == null || synonymList.isEmpty()) {
+        for (PubtatorResult.KbObjectItem obj : objects) {
+            String name = obj.name();
+            List<String> synonymList = obj.synonyms();
+
+            if (name == null || name.isBlank() || synonymList == null || synonymList.isEmpty()) {
                 continue;
             }
 
@@ -63,23 +71,15 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                 List<Bson> updates = new ArrayList<>();
                 updates.add(Updates.addEachToSet("synonyms", synonymList));
 
+                List<String> biotypes = obj.biotypes();
                 if (biotypes != null && !biotypes.isEmpty()) {
-                    Set<String> uniqueBiotypes = new LinkedHashSet<>();
-                    String mainBiotype = biotypes.get(name);
-                    if (mainBiotype != null && !mainBiotype.isBlank()) {
-                        uniqueBiotypes.add(mainBiotype.trim().toUpperCase());
-                    }
-                    for (String syn : synonymList) {
-                        if (syn == null || syn.isBlank()) {
-                            continue;
-                        }
-                        String synBiotype = biotypes.getOrDefault(syn, mainBiotype);
-                        if (synBiotype != null && !synBiotype.isBlank()) {
-                            uniqueBiotypes.add(synBiotype.trim().toUpperCase());
-                        }
-                    }
-                    if (!uniqueBiotypes.isEmpty()) {
-                        updates.add(Updates.addEachToSet("biotypes", new ArrayList<>(uniqueBiotypes)));
+                    List<String> normalizedBiotypes = biotypes.stream()
+                            .filter(b -> b != null && !b.isBlank())
+                            .map(b -> b.trim().toUpperCase())
+                            .distinct()
+                            .toList();
+                    if (!normalizedBiotypes.isEmpty()) {
+                        updates.add(Updates.addEachToSet("biotypes", new ArrayList<>(normalizedBiotypes)));
                     }
                 }
 
