@@ -24,6 +24,7 @@ import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
 import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
+import com.biopatternsg.domain.ports.in.GetKbEventsByRestriction;
 import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
@@ -34,6 +35,7 @@ import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsReque
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.KbEventsByRestrictionRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
@@ -72,6 +74,7 @@ public class PubmedController {
     private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
     private final GetKbEventsByPipeline getKbEventsByPipeline;
+    private final GetKbEventsByRestriction getKbEventsByRestriction;
     private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
     private final UpdateKbObjectRoles updateKbObjectRoles;
     private final ResetKbObjectRoles resetKbObjectRoles;
