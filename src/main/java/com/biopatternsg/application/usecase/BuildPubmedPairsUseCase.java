@@ -62,25 +62,31 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
 
     @Override
     public void execute(String pipelineId, boolean useOnlyPrincipalName, int levels, String userId) {
+        try {
+            pairRepository.deleteByPipelineId(pipelineId);
 
-        pairRepository.deleteByPipelineId(pipelineId);
+            Set<PairsGenerator.TermsPair> firstLevelPairs = processFirstLevel(pipelineId, useOnlyPrincipalName);
+            savePairs(firstLevelPairs, pipelineId);
 
-        Set<PairsGenerator.TermsPair> firstLevelPairs = processFirstLevel(pipelineId, useOnlyPrincipalName);
-        savePairs(firstLevelPairs, pipelineId);
+            for (int currentLevel = SECOND_LEVEL; currentLevel <= levels; currentLevel++) {
+                processHigherLevel(pipelineId, useOnlyPrincipalName, currentLevel);
+            }
 
-        for (int currentLevel = SECOND_LEVEL; currentLevel <= levels; currentLevel++) {
-            processHigherLevel(pipelineId, useOnlyPrincipalName, currentLevel);
+            log.info("Generated unique pairs FINISHED");
+
+            long totalPairs = pairRepository.findByPipelineId(pipelineId).stream()
+                    .filter(c -> c.getPairs() != null)
+                    .mapToLong(c -> c.getPairs().size())
+                    .sum();
+
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId,
+                    java.util.Map.of("combinationsGenerated", String.valueOf(totalPairs)));
+        } catch (Throwable e) {
+            log.error("Fatal error during pubmed pairs generation for pipelineId=[{}]", pipelineId, e);
+            configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.FAILED, userId,
+                    java.util.Map.of("errorMessage", e.getMessage() != null ? e.getMessage() : "Unknown error"));
+            throw e;
         }
-
-        log.info("Generated unique pairs FINISHED");
-
-        long totalPairs = pairRepository.findByPipelineId(pipelineId).stream()
-                .filter(c -> c.getPairs() != null)
-                .mapToLong(c -> c.getPairs().size())
-                .sum();
-
-        configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId,
-                java.util.Map.of("combinationsGenerated", String.valueOf(totalPairs)));
     }
 
     private void processHigherLevel(String pipelineId, boolean useOnlyPrincipalName, int level) {

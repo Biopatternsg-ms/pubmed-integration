@@ -99,6 +99,10 @@ pipeline {
                         sh "docker stop ${CONTAINER_NAME} || true"
                         sh "docker rm ${CONTAINER_NAME} || true"
 
+                        // Purge RabbitMQ queues before starting new container
+                        sh 'curl -s -u "${RABBIT_USER}:${RABBIT_PASSWORD}" -X DELETE "http://${RABBIT_HOST}:15672/api/queues/%2f/ncbi-pubmed-queue/contents" || true'
+                        sh 'curl -s -u "${RABBIT_USER}:${RABBIT_PASSWORD}" -X DELETE "http://${RABBIT_HOST}:15672/api/queues/%2f/pubtator-queue/contents" || true'
+
                         // Run the new container.
                         sh """
                         docker run -d \\

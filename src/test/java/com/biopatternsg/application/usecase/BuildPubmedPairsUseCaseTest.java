@@ -391,5 +391,24 @@ class BuildPubmedPairsUseCaseTest {
                     any()
             );
         }
+
+        @Test
+        @DisplayName("Updates COMBINATIONS step to FAILED on exception and rethrows")
+        void updatesStatusToFailedOnException() {
+            when(biologicalObjectsService.getBiologicalObjectsByLevel(PIPELINE_ID, 1))
+                    .thenThrow(new RuntimeException("Service unavailable"));
+
+            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
+                    useCase.execute(PIPELINE_ID, true, 1, USER_ID)
+            );
+
+            verify(configAndControlRepository).updateStep(
+                    eq(PIPELINE_ID),
+                    eq(com.biopatternsg.domain.model.PipelineSteps.COMBINATIONS),
+                    eq(com.biopatternsg.domain.model.Status.FAILED),
+                    eq(USER_ID),
+                    any()
+            );
+        }
     }
 }

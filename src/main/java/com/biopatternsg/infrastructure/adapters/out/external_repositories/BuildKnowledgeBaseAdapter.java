@@ -23,6 +23,7 @@ import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.GenerateK
 import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.PubTatorDocumentRequest;
 import com.biopatternsg.infrastructure.clients.internal.BuildKnowledgeBaseHttpClient;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -41,6 +42,7 @@ public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
     }
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public GenerateKbResult generateKnowledgeBase(
             String pipelineId,
             String pmid,

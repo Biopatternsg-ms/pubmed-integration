@@ -19,6 +19,7 @@ import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.ports.out.external_repositories.BiologicalObjectsRepository;
 import com.biopatternsg.infrastructure.internal_services.QueryBiologicalObjects;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -30,16 +31,19 @@ public class BiologicalObjectsRepositoryAdapter implements BiologicalObjectsRepo
     private final QueryBiologicalObjects queryBiologicalObjects;
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public List<BiologicalObject> biologicalObjectsByPipelineAndLevel(String pipelineId, int level) {
         return queryBiologicalObjects.biologicalObjectsByPipelineAndLevel(pipelineId, level);
     }
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public List<BiologicalObject> biologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId) {
         return queryBiologicalObjects.biologicalObjectFatherBrothersAndSons(pipelineId, biologicalObjectId);
     }
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public List<BiologicalObject> expertObjectsByPipelineAndLevel(String pipelineId, int level) {
         return queryBiologicalObjects.expertObjectsByPipelineAndLevel(pipelineId, level);
     }

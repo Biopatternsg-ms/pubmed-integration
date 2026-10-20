@@ -20,6 +20,7 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.infrastructure.internal_services.QueryConfigAndControl;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
@@ -31,11 +32,13 @@ public class ConfigAndControlRepositoryAdapter implements ConfigAndControlReposi
     private final QueryConfigAndControl configAndControlService;
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public void updateStep(String pipelineId, PipelineSteps step, Status status, String userId) {
         configAndControlService.updateStep(pipelineId, step.name(), status.name(), userId, null);
     }
 
     @Override
+    @Retry(maxRetries = 2, delay = 1000)
     public void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics) {
         configAndControlService.updateStep(pipelineId, step.name(), status.name(), userId, metrics);
     }

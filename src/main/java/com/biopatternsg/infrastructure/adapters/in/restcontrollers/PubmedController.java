@@ -28,7 +28,10 @@ import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
+import com.biopatternsg.domain.model.PipelineSteps;
+import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
+import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
@@ -79,6 +82,7 @@ public class PubmedController {
     private final GetPublicationsByPmids getPublicationsByPmids;
     private final Executor executor;
     private final SessionUtils sessionUtils;
+    private final ConfigAndControlRepository configAndControlRepository;
 
     @POST
     @Path("/build-pairs")
@@ -89,8 +93,15 @@ public class PubmedController {
         CompletableFuture.runAsync(() -> {
             try {
                 buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId);
-            } catch (Exception e) {
-                log.error("Error building pubmed pairs", e);
+            } catch (Throwable e) {
+                log.error("Error building pubmed pairs for pipeline {}", buildPairsRequest.pipelineId(), e);
+                configAndControlRepository.updateStep(
+                        buildPairsRequest.pipelineId(),
+                        PipelineSteps.COMBINATIONS,
+                        Status.FAILED,
+                        userId,
+                        Map.of("errorMessage", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                );
             }
         }, executor);
 
@@ -110,8 +121,15 @@ public class PubmedController {
         CompletableFuture.runAsync(() -> {
             try {
                 searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);
-            } catch (Exception e) {
-                log.error("Error searching pubmed pairs", e);
+            } catch (Throwable e) {
+                log.error("Error searching pubmed pairs for pipeline {}", request.pipelineId(), e);
+                configAndControlRepository.updateStep(
+                        request.pipelineId(),
+                        PipelineSteps.SEARCH_PUBMED_IDS,
+                        Status.FAILED,
+                        userId,
+                        Map.of("errorMessage", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                );
             }
         }, executor);
 
@@ -131,8 +149,15 @@ public class PubmedController {
         CompletableFuture.runAsync(() -> {
             try {
                 searchPubtatorByPmids.execute(request.pipelineId(), userId);
-            } catch (Exception e) {
-                log.error("Error searching PubTator by pmids", e);
+            } catch (Throwable e) {
+                log.error("Error searching PubTator by pmids for pipeline {}", request.pipelineId(), e);
+                configAndControlRepository.updateStep(
+                        request.pipelineId(),
+                        PipelineSteps.SEARCH_PUBTATOR,
+                        Status.FAILED,
+                        userId,
+                        Map.of("errorMessage", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                );
             }
         }, executor);
 
@@ -152,8 +177,15 @@ public class PubmedController {
         CompletableFuture.runAsync(() -> {
             try {
                 generateKbForPipeline.execute(request.pipelineId(), userId);
-            } catch (Exception e) {
-                log.error("Error generating KB for pipeline", e);
+            } catch (Throwable e) {
+                log.error("Error generating KB for pipeline {}", request.pipelineId(), e);
+                configAndControlRepository.updateStep(
+                        request.pipelineId(),
+                        PipelineSteps.BUILD_KNOWLEDGE_BASE,
+                        Status.FAILED,
+                        userId,
+                        Map.of("errorMessage", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                );
             }
         }, executor);
 
@@ -173,8 +205,8 @@ public class PubmedController {
         CompletableFuture.runAsync(() -> {
             try {
                 generateAlignedObjects.execute(request.pipelineId(), request.expertObjects(), userId);
-            } catch (Exception e) {
-                log.error("Error generating aligned objects", e);
+            } catch (Throwable e) {
+                log.error("Error generating aligned objects for pipeline {}", request.pipelineId(), e);
             }
         }, executor);
 
