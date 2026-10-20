@@ -298,6 +298,26 @@ public class PubmedController {
         return Response.ok(events).build();
     }
 
+    @POST
+    @Path("/kb-events/{pipelineId}/by-restriction")
+    public Response getKbEventsByRestriction(
+            @PathParam("pipelineId") String pipelineId,
+            KbEventsByRestrictionRequest request
+    ) {
+        log.info("Request to get kb_events by restriction for pipelineId=[{}], restrictionLevel=[{}]",
+                LogSanitizer.sanitize(pipelineId),
+                request != null ? LogSanitizer.sanitize(request.restrictionLevel()) : "null");
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        String level = request != null ? request.restrictionLevel() : null;
+        List<String> objects = request != null ? request.alignedObjects() : null;
+        var events = getKbEventsByRestriction.execute(pipelineId, level, objects);
+        return Response.ok(events).build();
+    }
+
     @GET
     @Path("/aligned-results/{pipelineId}")
     public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
