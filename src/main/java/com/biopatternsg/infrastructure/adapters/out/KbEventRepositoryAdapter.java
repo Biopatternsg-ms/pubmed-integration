@@ -169,6 +169,7 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
 
     private KbEvent toDomain(KbEventCollection doc) {
         return new KbEvent(
+                doc.id != null ? doc.id.toHexString() : null,
                 doc.getPipelineId(),
                 doc.getFirst(),
                 doc.getRelation(),
