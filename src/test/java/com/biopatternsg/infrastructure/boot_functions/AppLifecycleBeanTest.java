@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -44,7 +45,7 @@ class AppLifecycleBeanTest {
 
     @BeforeEach
     void setUp() {
-        appLifecycleBean = new AppLifecycleBean(configAndControlHttpClient);
+        appLifecycleBean = new AppLifecycleBean(configAndControlHttpClient, Runnable::run);
     }
 
     @Test
@@ -71,5 +72,14 @@ class AppLifecycleBeanTest {
         assertDoesNotThrow(() -> appLifecycleBean.onStart(event));
 
         verify(configAndControlHttpClient, times(1)).resumePipelines(any(ResumePipelineRequest.class));
+    }
+
+    @Test
+    @DisplayName("onStart with default constructor should not block or throw")
+    void testDefaultConstructorExecution() {
+        AppLifecycleBean defaultBean = new AppLifecycleBean(configAndControlHttpClient);
+        assertNotNull(defaultBean);
+        StartupEvent event = new StartupEvent();
+        assertDoesNotThrow(() -> defaultBean.onStart(event));
     }
 }

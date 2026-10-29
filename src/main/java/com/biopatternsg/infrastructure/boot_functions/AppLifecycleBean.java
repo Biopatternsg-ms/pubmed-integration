@@ -20,27 +20,42 @@ import com.biopatternsg.infrastructure.clients.internal.ConfigAndControlHttpClie
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class AppLifecycleBean {
 
     private static final Logger LOG = Logger.getLogger(AppLifecycleBean.class);
+    private static final long DEFAULT_DELAY_SECONDS = 10;
 
     private final ConfigAndControlHttpClient configAndControlHttpClient;
+    private final Executor executor;
 
+    @Inject
     public AppLifecycleBean(@RestClient ConfigAndControlHttpClient configAndControlHttpClient) {
+        this(configAndControlHttpClient, CompletableFuture.delayedExecutor(DEFAULT_DELAY_SECONDS, TimeUnit.SECONDS));
+    }
+
+    AppLifecycleBean(ConfigAndControlHttpClient configAndControlHttpClient, Executor executor) {
         this.configAndControlHttpClient = configAndControlHttpClient;
+        this.executor = executor;
     }
 
     void onStart(@Observes StartupEvent ev) {
-        LOG.info("Application starting: initiating autonomous pipeline resumption for PUBMED_INTEGRATION");
-        try {
-            configAndControlHttpClient.resumePipelines(new ResumePipelineRequest("PUBMED_INTEGRATION"));
-            LOG.info("Pipeline resumption request for PUBMED_INTEGRATION dispatched successfully");
-        } catch (Exception e) {
-            LOG.error("Failed to resume pipelines on application startup for PUBMED_INTEGRATION", e);
-        }
+        LOG.info("Application starting: scheduling autonomous pipeline resumption for PUBMED_INTEGRATION in 5 seconds");
+        CompletableFuture.runAsync(() -> {
+            try {
+                configAndControlHttpClient.resumePipelines(new ResumePipelineRequest("PUBMED_INTEGRATION"));
+                LOG.info("Pipeline resumption request for PUBMED_INTEGRATION dispatched successfully");
+            } catch (Exception e) {
+                LOG.error("Failed to resume pipelines on application startup for PUBMED_INTEGRATION", e);
+            }
+        }, executor);
     }
 }
