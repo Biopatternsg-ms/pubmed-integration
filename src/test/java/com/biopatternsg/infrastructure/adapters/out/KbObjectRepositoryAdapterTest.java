@@ -175,4 +175,97 @@ class KbObjectRepositoryAdapterTest {
         assertThat(eachArray.get(0).asString().getValue()).isEqualTo("PROTEIN");
         assertThat(optionsCaptor.getValue().isUpsert()).isTrue();
     }
+
+    @Test
+    @DisplayName("When name matches @PREFIJO_SUFIJO structure, should save PREFIJO in biotypes, SUFIJO in name, and only SUFIJO in synonyms")
+    void saveKbObjects_withPrefixSuffixPattern_shouldExtractBiotypePrefixAndSaveSuffixNameAndSynonyms() {
+        // Arrange: @GENE_MAP2 with synonyms list containing @GENE_MAP2 and additional aliases
+        String rawName = "@GENE_MAP2";
+        Map<String, List<String>> synonymsMap = Map.of(rawName, List.of("@GENE_MAP2", "OTHER_ALIAS"));
+
+        ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
+
+        // Act
+        adapter.saveKbObjects(PIPELINE_ID, synonymsMap, Collections.emptyMap());
+
+        // Assert
+        verify(mockCollection, times(1)).updateOne(
+                filterCaptor.capture(),
+                updateCaptor.capture(),
+                optionsCaptor.capture()
+        );
+
+        // Filter: name should be SUFIJO ("MAP2")
+        BsonDocument filterDoc = filterCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        BsonArray andArray = filterDoc.getArray("$and");
+        assertThat(andArray).hasSize(2);
+        assertThat(andArray.get(0).asDocument().getString("pipelineId").getValue()).isEqualTo(PIPELINE_ID);
+        assertThat(andArray.get(1).asDocument().getString("name").getValue()).isEqualTo("MAP2");
+
+        // Update: biotypes should contain PREFIJO ("GENE"), synonyms should contain ONLY SUFIJO ("MAP2")
+        BsonDocument updateDoc = updateCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        assertThat(updateDoc.containsKey("$addToSet")).isTrue();
+        BsonDocument addToSetDoc = updateDoc.getDocument("$addToSet");
+        assertThat(addToSetDoc.containsKey("biotypes")).isTrue();
+        assertThat(addToSetDoc.containsKey("synonyms")).isTrue();
+
+        BsonDocument biotypesDoc = addToSetDoc.getDocument("biotypes");
+        assertThat(biotypesDoc.containsKey("$each")).isTrue();
+        BsonArray biotypesArray = biotypesDoc.getArray("$each");
+        assertThat(biotypesArray).hasSize(1);
+        assertThat(biotypesArray.get(0).asString().getValue()).isEqualTo("GENE");
+
+        BsonDocument synonymsDoc = addToSetDoc.getDocument("synonyms");
+        assertThat(synonymsDoc.containsKey("$each")).isTrue();
+        BsonArray synonymsArray = synonymsDoc.getArray("$each");
+        assertThat(synonymsArray).hasSize(1);
+        assertThat(synonymsArray.get(0).asString().getValue()).isEqualTo("MAP2");
+
+        assertThat(optionsCaptor.getValue().isUpsert()).isTrue();
+    }
+
+    @Test
+    @DisplayName("When name has @PREFIJO_SUFIJO with underscores in suffix, prefix is before first underscore and synonyms has only suffix")
+    void saveKbObjects_withPrefixSuffixAndUnderscoreInSuffix_shouldParseCorrectly() {
+        String rawName = "@CHEMICAL_COMPOUND_A";
+        Map<String, List<String>> synonymsMap = Map.of(rawName, List.of("COMPOUND_A", "EXTRA"));
+
+        ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
+
+        adapter.saveKbObjects(PIPELINE_ID, synonymsMap, Collections.emptyMap());
+
+        verify(mockCollection, times(1)).updateOne(
+                filterCaptor.capture(),
+                updateCaptor.capture(),
+                optionsCaptor.capture()
+        );
+
+        BsonDocument filterDoc = filterCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        BsonArray andArray = filterDoc.getArray("$and");
+        assertThat(andArray.get(1).asDocument().getString("name").getValue()).isEqualTo("COMPOUND_A");
+
+        BsonDocument updateDoc = updateCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        BsonDocument biotypesDoc = updateDoc.getDocument("$addToSet").getDocument("biotypes");
+        assertThat(biotypesDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("CHEMICAL");
+
+        BsonDocument synonymsDoc = updateDoc.getDocument("$addToSet").getDocument("synonyms");
+        assertThat(synonymsDoc.getArray("$each")).hasSize(1);
+        assertThat(synonymsDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("COMPOUND_A");
+    }
 }

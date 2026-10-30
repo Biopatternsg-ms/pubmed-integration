@@ -39,11 +39,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
 public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMongoRepository<KbObjectCollection> {
+
+    private static final Pattern PREFIX_SUFFIX_PATTERN = Pattern.compile("^@([^_]+)_(.+)$");
 
     @Override
     public void saveKbObjects(String pipelineId, Map<String, List<String>> synonyms, Map<String, String> biotypes) {
@@ -52,20 +56,50 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
         }
 
         for (Map.Entry<String, List<String>> entry : synonyms.entrySet()) {
-            String name = entry.getKey();
+            String rawName = entry.getKey();
             List<String> synonymList = entry.getValue();
 
-            if (synonymList == null || synonymList.isEmpty()) {
+            if (rawName == null || rawName.isBlank() || synonymList == null || synonymList.isEmpty()) {
                 continue;
             }
 
+            String name = rawName.trim();
+            String extractedBiotype = null;
+            List<String> processedSynonyms;
+
+            Matcher matcher = PREFIX_SUFFIX_PATTERN.matcher(name);
+            if (matcher.matches()) {
+                extractedBiotype = matcher.group(1).trim().toUpperCase();
+                String suffix = matcher.group(2).trim();
+                if (!suffix.isBlank()) {
+                    name = suffix;
+                }
+                // En los casos @PREFIJO_SUFIJO, en los sinonimos se guarda el sufijo solamente
+                processedSynonyms = List.of(name);
+            } else {
+                // Para los que no tienen @ el guardado se hace como antes
+                processedSynonyms = new ArrayList<>();
+                for (String syn : synonymList) {
+                    if (syn != null && !syn.isBlank()) {
+                        processedSynonyms.add(syn.trim());
+                    }
+                }
+                if (processedSynonyms.isEmpty()) {
+                    processedSynonyms.add(name);
+                }
+            }
+
             try {
-                List<Bson> updates = new ArrayList<>();
-                updates.add(Updates.addEachToSet("synonyms", synonymList));
+                Set<String> uniqueBiotypes = new LinkedHashSet<>();
+                if (extractedBiotype != null && !extractedBiotype.isBlank()) {
+                    uniqueBiotypes.add(extractedBiotype);
+                }
 
                 if (biotypes != null && !biotypes.isEmpty()) {
-                    Set<String> uniqueBiotypes = new LinkedHashSet<>();
-                    String mainBiotype = biotypes.get(name);
+                    String mainBiotype = biotypes.get(rawName);
+                    if (mainBiotype == null) {
+                        mainBiotype = biotypes.get(name);
+                    }
                     if (mainBiotype != null && !mainBiotype.isBlank()) {
                         uniqueBiotypes.add(mainBiotype.trim().toUpperCase());
                     }
@@ -73,14 +107,21 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                         if (syn == null || syn.isBlank()) {
                             continue;
                         }
-                        String synBiotype = biotypes.getOrDefault(syn, mainBiotype);
+                        String synBiotype = biotypes.get(syn);
+                        if (synBiotype == null) {
+                            synBiotype = biotypes.getOrDefault(syn.trim(), mainBiotype);
+                        }
                         if (synBiotype != null && !synBiotype.isBlank()) {
                             uniqueBiotypes.add(synBiotype.trim().toUpperCase());
                         }
                     }
-                    if (!uniqueBiotypes.isEmpty()) {
-                        updates.add(Updates.addEachToSet("biotypes", new ArrayList<>(uniqueBiotypes)));
-                    }
+                }
+
+                List<Bson> updates = new ArrayList<>();
+                updates.add(Updates.addEachToSet("synonyms", processedSynonyms));
+
+                if (!uniqueBiotypes.isEmpty()) {
+                    updates.add(Updates.addEachToSet("biotypes", new ArrayList<>(uniqueBiotypes)));
                 }
 
                 Bson updateOperation = updates.size() == 1
@@ -95,8 +136,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                         updateOperation,
                         new UpdateOptions().upsert(true)
                 );
-                log.debug("KB object upserted for pipelineId=[{}], name=[{}]: synonyms={}",
-                        LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), synonymList);
+                log.debug("KB object upserted for pipelineId=[{}], name=[{}]: synonyms={}, biotypes={}",
+                        LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), processedSynonyms, uniqueBiotypes);
             } catch (Exception e) {
                 log.error("Error upserting KB object for [{}, {}]: {}",
                         LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);
