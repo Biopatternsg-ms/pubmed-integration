@@ -30,17 +30,38 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
 public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongoRepository<KbEventCollection> {
 
+    private static final Pattern PREFIX_SUFFIX_PATTERN = Pattern.compile("^@([^_]+)_(.+)$");
+
+    private String extractSuffix(String term) {
+        if (term == null || term.isBlank()) {
+            return term;
+        }
+        String trimmed = term.trim();
+        Matcher matcher = PREFIX_SUFFIX_PATTERN.matcher(trimmed);
+        if (matcher.matches()) {
+            String suffix = matcher.group(2).trim();
+            if (!suffix.isBlank()) {
+                return suffix;
+            }
+        }
+        return trimmed;
+    }
+
     @Override
     public Optional<KbEvent> findByRelation(String pipelineId, String first, String relation, String second) {
         try {
+            String cleanFirst = extractSuffix(first);
+            String cleanSecond = extractSuffix(second);
             KbEventCollection doc = find("pipelineId = ?1 and first = ?2 and relation = ?3 and second = ?4",
-                    pipelineId, first, relation, second).firstResult();
+                    pipelineId, cleanFirst, relation, cleanSecond).firstResult();
             return Optional.ofNullable(doc).map(this::toDomain);
         } catch (Exception e) {
             log.error("Error finding KbEvent [{}, {},{},{}]: {}",
@@ -56,19 +77,22 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
             if (pubmedIds == null || pubmedIds.isEmpty()) {
                 return;
             }
+            String cleanFirst = extractSuffix(first);
+            String cleanSecond = extractSuffix(second);
+
             mongoCollection().updateOne(
                     Filters.and(
                             Filters.eq("pipelineId", pipelineId),
-                            Filters.eq("first", first),
+                            Filters.eq("first", cleanFirst),
                             Filters.eq("relation", relation),
-                            Filters.eq("second", second)
+                            Filters.eq("second", cleanSecond)
                     ),
                     Updates.addEachToSet("pubmedIds", pubmedIds),
                     new com.mongodb.client.model.UpdateOptions().upsert(true)
             );
             log.debug("KbEvent upserted: [{}, [{},{},{}]] with PMIDs {}",
-                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(first),
-                    LogSanitizer.sanitize(relation), LogSanitizer.sanitize(second), pubmedIds);
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(cleanFirst),
+                    LogSanitizer.sanitize(relation), LogSanitizer.sanitize(cleanSecond), pubmedIds);
         } catch (Exception e) {
             log.error("Error upserting KbEvent [{}, [{},{},{}]]: {}",
                     LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(first),
@@ -83,7 +107,7 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
             if (term == null || term.isBlank()) {
                 return List.of();
             }
-            String cleanTerm = term.trim();
+            String cleanTerm = extractSuffix(term);
             String regex = "^" + java.util.regex.Pattern.quote(cleanTerm) + "$";
             return find("{'pipelineId': ?1, '$or': [{'first': {'$regex': ?2, '$options': 'i'}}, {'second': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .stream()
