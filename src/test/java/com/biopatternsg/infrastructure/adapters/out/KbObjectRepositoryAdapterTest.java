@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
+import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.mongo.KbObjectCollection;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
@@ -267,5 +268,43 @@ class KbObjectRepositoryAdapterTest {
         BsonDocument synonymsDoc = updateDoc.getDocument("$addToSet").getDocument("synonyms");
         assertThat(synonymsDoc.getArray("$each")).hasSize(1);
         assertThat(synonymsDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("COMPOUND_A");
+    }
+
+    @Test
+    @DisplayName("saveKbObjectItems with @PREFIJO_SUFIJO should extract prefix into biotypes and save suffix in name and synonyms")
+    void saveKbObjectItems_withPrefixSuffixPattern_shouldExtractBiotypePrefixAndSaveSuffix() {
+        List<PubtatorResult.KbObjectItem> items = List.of(
+                new PubtatorResult.KbObjectItem("@GENE_MAP2", List.of("@GENE_MAP2", "ALIAS"), Collections.emptyList())
+        );
+
+        ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
+        ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
+
+        adapter.saveKbObjectItems(PIPELINE_ID, items);
+
+        verify(mockCollection, times(1)).updateOne(
+                filterCaptor.capture(),
+                updateCaptor.capture(),
+                optionsCaptor.capture()
+        );
+
+        BsonDocument filterDoc = filterCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        BsonArray andArray = filterDoc.getArray("$and");
+        assertThat(andArray.get(1).asDocument().getString("name").getValue()).isEqualTo("MAP2");
+
+        BsonDocument updateDoc = updateCaptor.getValue().toBsonDocument(
+                BsonDocument.class,
+                MongoClientSettings.getDefaultCodecRegistry()
+        );
+        BsonDocument biotypesDoc = updateDoc.getDocument("$addToSet").getDocument("biotypes");
+        assertThat(biotypesDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("GENE");
+
+        BsonDocument synonymsDoc = updateDoc.getDocument("$addToSet").getDocument("synonyms");
+        assertThat(synonymsDoc.getArray("$each")).hasSize(1);
+        assertThat(synonymsDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("MAP2");
     }
 }
