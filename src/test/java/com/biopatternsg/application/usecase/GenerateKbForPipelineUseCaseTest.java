@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
@@ -71,8 +72,8 @@ class GenerateKbForPipelineUseCaseTest {
     }
 
     @Test
-    @DisplayName("When synonyms and biotypes are present in external KB response, they should be persisted in kb_objects")
-    void execute_withKbObjects_shouldPersistKbObjects() {
+    @DisplayName("When knowledgeBase does not exist in pubtator_results, should call build-knowledge-base, save knowledgeBase in pubtator_results, and persist in kb_events and kb_objects")
+    void execute_withoutCachedKnowledgeBase_shouldCallExternalAndSaveKnowledgeBase() {
         // Arrange
         when(pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(PIPELINE_ID))
                 .thenReturn(List.of(PMID));
@@ -87,14 +88,17 @@ class GenerateKbForPipelineUseCaseTest {
         when(pubtatorResultRepository.findByPmid(PMID))
                 .thenReturn(mockPubtatorResult);
 
+        List<KbEvent> events = List.of(
+                new KbEvent(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID))
+        );
         Map<String, List<String>> synonymsMap = Map.of(
-                "BRCA1", List.of("BR1", "RNF53", "Breast Cancer 1")
+                "IFNG", List.of("IFNG", "IFN-GAMMA")
         );
         Map<String, String> biotypesMap = Map.of(
-                "BRCA1", "protein"
+                "IFNG", "protein"
         );
         GenerateKbResult mockKbResult = new GenerateKbResult(
-                Collections.emptyList(),
+                events,
                 synonymsMap,
                 biotypesMap
         );
@@ -112,7 +116,61 @@ class GenerateKbForPipelineUseCaseTest {
         useCase.execute(PIPELINE_ID, USER_ID);
 
         // Assert
-        verify(kbObjectRepository, times(1)).saveKbObjects(PIPELINE_ID, synonymsMap, biotypesMap);
+        PubtatorResult.KnowledgeBase expectedKb = new PubtatorResult.KnowledgeBase(
+                List.of(new PubtatorResult.KbEventItem("IFNG", "positive_correlation", "TLR2")),
+                List.of(new PubtatorResult.KbObjectItem("IFNG", List.of("IFNG", "IFN-GAMMA"), List.of("PROTEIN")))
+        );
+
+        verify(pubtatorResultRepository, times(1)).updateKnowledgeBase(PMID, expectedKb);
+        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID));
+        verify(kbObjectRepository, times(1)).saveKbObjectItems(PIPELINE_ID, expectedKb.objects());
+        verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
+        verify(configAndControlRepository, times(1)).updateStep(
+                eq(PIPELINE_ID),
+                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
+                eq(Status.COMPLETED),
+                eq(USER_ID),
+                any()
+        );
+    }
+
+    @Test
+    @DisplayName("When knowledgeBase already exists in pubtator_results, should skip build-knowledge-base call and persist cached data into kb_events and kb_objects")
+    void execute_withCachedKnowledgeBase_shouldSkipExternalCallAndUseCachedData() {
+        // Arrange
+        when(pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(PIPELINE_ID))
+                .thenReturn(List.of(PMID));
+
+        PubtatorResult.KnowledgeBase cachedKb = new PubtatorResult.KnowledgeBase(
+                List.of(
+                        new PubtatorResult.KbEventItem("IFNG", "positive_correlation", "TLR2"),
+                        new PubtatorResult.KbEventItem("TLR2", "positive_correlation", "IFNG")
+                ),
+                List.of(
+                        new PubtatorResult.KbObjectItem("IFNG", List.of("IFNG", "IFN-GAMMA"), List.of("PROTEIN"))
+                )
+        );
+
+        PubtatorResult mockPubtatorResult = new PubtatorResult(
+                PMID,
+                "A Study of Biological Entities",
+                "The actual text of study",
+                Collections.emptyList(),
+                Collections.emptyList(),
+                cachedKb
+        );
+        when(pubtatorResultRepository.findByPmid(PMID))
+                .thenReturn(mockPubtatorResult);
+
+        // Act
+        useCase.execute(PIPELINE_ID, USER_ID);
+
+        // Assert
+        verifyNoInteractions(buildKnowledgeBaseRepoWeb);
+        verify(pubtatorResultRepository, never()).updateKnowledgeBase(anyString(), any());
+        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID));
+        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "TLR2", "positive_correlation", "IFNG", List.of(PMID));
+        verify(kbObjectRepository, times(1)).saveKbObjectItems(PIPELINE_ID, cachedKb.objects());
         verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
         verify(configAndControlRepository, times(1)).updateStep(
                 eq(PIPELINE_ID),
