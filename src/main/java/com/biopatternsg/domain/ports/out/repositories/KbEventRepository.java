@@ -47,5 +47,10 @@ public interface KbEventRepository {
      * Busca todos los eventos biológicos asociados a un pipelineId.
      */
     List<KbEvent> findByPipelineId(String pipelineId);
-}
 
+    /**
+     * Busca los eventos biológicos asociados a un pipelineId filtrados según el nivel de restricción
+     * (VERY_RESTRICTED, RESTRICTED, UNRESTRICTED) y la lista de objetos alineados.
+     */
+    List<KbEvent> findByPipelineIdAndRestriction(String pipelineId, String restrictionLevel, List<String> alignedObjects);
+}
