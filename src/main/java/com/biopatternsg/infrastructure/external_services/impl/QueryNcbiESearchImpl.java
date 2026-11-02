@@ -38,6 +38,7 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
     private final String tool;
     private final String email;
     private final String apiKey;
+    private final boolean hasValidKey;
     private final SimpleRateLimiter rateLimiter;
 
     public QueryNcbiESearchImpl(
@@ -51,7 +52,7 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
         this.tool = tool;
         this.email = email;
         this.apiKey = apiKey;
-        boolean hasValidKey = apiKey != null && !apiKey.trim().isEmpty()
+        this.hasValidKey = apiKey != null && !apiKey.trim().isEmpty()
                 && !apiKey.equalsIgnoreCase("none")
                 && !apiKey.equalsIgnoreCase("null")
                 && !apiKey.contains("${");
@@ -62,7 +63,7 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
     @Override
     public NcbiSearchResult search(String term, int retmax) {
         rateLimiter.acquire();
-        String apiKeyParam = (apiKey == null || apiKey.trim().isEmpty()) ? null : apiKey.trim();
+        String apiKeyParam = hasValidKey ? apiKey.trim() : null;
         NcbiESearchResponse response = ncbiESearchClient.search("pubmed", term, retmax, "json", tool, email, "relevance", apiKeyParam);
 
         NcbiESearchResultDto result = Optional.ofNullable(response)
