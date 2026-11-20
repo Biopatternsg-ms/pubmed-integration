@@ -24,6 +24,7 @@ import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
 import com.biopatternsg.domain.ports.in.GetKbObjectByName;
 import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
 import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
+import com.biopatternsg.domain.ports.in.GetKbEventsByRestriction;
 import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
 import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
@@ -34,6 +35,7 @@ import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsReque
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.KbEventsByRestrictionRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
@@ -72,6 +74,7 @@ public class PubmedController {
     private final GetKbObjectByName getKbObjectByName;
     private final GetKbEventsByTerm getKbEventsByTerm;
     private final GetKbEventsByPipeline getKbEventsByPipeline;
+    private final GetKbEventsByRestriction getKbEventsByRestriction;
     private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
     private final UpdateKbObjectRoles updateKbObjectRoles;
     private final ResetKbObjectRoles resetKbObjectRoles;
@@ -292,6 +295,26 @@ public class PubmedController {
                     .build();
         }
         var events = getKbEventsByPipeline.execute(pipelineId);
+        return Response.ok(events).build();
+    }
+
+    @POST
+    @Path("/kb-events/{pipelineId}/by-restriction")
+    public Response getKbEventsByRestriction(
+            @PathParam("pipelineId") String pipelineId,
+            KbEventsByRestrictionRequest request
+    ) {
+        log.info("Request to get kb_events by restriction for pipelineId=[{}], restrictionLevel=[{}]",
+                LogSanitizer.sanitize(pipelineId),
+                request != null ? LogSanitizer.sanitize(request.restrictionLevel()) : "null");
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        String level = request != null ? request.restrictionLevel() : null;
+        List<String> objects = request != null ? request.alignedObjects() : null;
+        var events = getKbEventsByRestriction.execute(pipelineId, level, objects);
         return Response.ok(events).build();
     }
 

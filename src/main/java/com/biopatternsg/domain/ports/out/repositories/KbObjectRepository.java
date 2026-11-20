@@ -17,6 +17,7 @@ package com.biopatternsg.domain.ports.out.repositories;
 
 import com.biopatternsg.domain.model.KbObject;
 import com.biopatternsg.domain.model.PaginatedResult;
+import com.biopatternsg.domain.model.PubtatorResult;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,8 @@ public interface KbObjectRepository {
     }
 
     void saveKbObjects(String pipelineId, Map<String, List<String>> synonyms, Map<String, String> biotypes);
+
+    void saveKbObjectItems(String pipelineId, List<PubtatorResult.KbObjectItem> objects);
 
     /**
      * Retrieves all synonyms for a given pipelineId, mapped by their name (main ID).

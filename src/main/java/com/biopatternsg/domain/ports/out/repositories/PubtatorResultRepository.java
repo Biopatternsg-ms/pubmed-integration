@@ -24,4 +24,5 @@ public interface PubtatorResultRepository {
     List<String> findExistingPmids(List<String> pmids);
     PubtatorResult findByPmid(String pmid);
     List<PubtatorResult> findByPmids(List<String> pmids);
+    void updateKnowledgeBase(String pmid, PubtatorResult.KnowledgeBase knowledgeBase);
 }
