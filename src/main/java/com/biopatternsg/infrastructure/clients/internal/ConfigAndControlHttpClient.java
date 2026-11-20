@@ -16,9 +16,12 @@
 package com.biopatternsg.infrastructure.clients.internal;
 
 import com.biopatternsg.infrastructure.adapters.dtos.PipelineStepRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.ResumePipelineRequest;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @RegisterRestClient(configKey = "config-and-control-api")
@@ -27,4 +30,8 @@ public interface ConfigAndControlHttpClient {
     @PATCH
     @Path("config-and-control/pipelines/update-step")
     void updateStep(PipelineStepRequest stepRequest, @HeaderParam("x-user-id") String userId);
+
+    @POST
+    @Path("config-and-control/pipelines/resume")
+    Response resumePipelines(ResumePipelineRequest request);
 }
