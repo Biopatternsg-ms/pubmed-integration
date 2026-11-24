@@ -1,0 +1,340 @@
+/*
+ * Copyright © 2026 biopatternsg (biopatternsg@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.biopatternsg.infrastructure.adapters.in.restcontrollers;
+
+import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
+import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
+import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
+import com.biopatternsg.domain.ports.in.GenerateKbForPipeline;
+import com.biopatternsg.domain.ports.in.GenerateAlignedObjects;
+import com.biopatternsg.domain.ports.in.GetPaginatedKbObjects;
+import com.biopatternsg.domain.ports.in.GetKbObjectByName;
+import com.biopatternsg.domain.ports.in.GetKbEventsByTerm;
+import com.biopatternsg.domain.ports.in.GetKbEventsByPipeline;
+import com.biopatternsg.domain.ports.in.GetKbEventsByRestriction;
+import com.biopatternsg.domain.ports.in.GetAllKbObjectsByPipeline;
+import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
+import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
+import com.biopatternsg.domain.ports.in.GetAlignedResults;
+import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
+import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsRequest;
+import com.biopatternsg.infrastructure.adapters.dtos.KbEventsByRestrictionRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import com.biopatternsg.domain.util.LogSanitizer;
+import com.biopatternsg.infrastructure.session.SessionUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
+@Slf4j
+@ApplicationScoped
+@RequiredArgsConstructor
+@Path("/pubmed")
+public class PubmedController {
+
+    private final BuildPubmedPairs buildPubmedPairs;
+    private final SearchPubmedByPairs searchPubmedByPairs;
+    private final SearchPubtatorByPmids searchPubtatorByPmids;
+    private final GenerateKbForPipeline generateKbForPipeline;
+    private final GenerateAlignedObjects generateAlignedObjects;
+    private final GetPaginatedKbObjects getPaginatedKbObjects;
+    private final GetKbObjectByName getKbObjectByName;
+    private final GetKbEventsByTerm getKbEventsByTerm;
+    private final GetKbEventsByPipeline getKbEventsByPipeline;
+    private final GetKbEventsByRestriction getKbEventsByRestriction;
+    private final GetAllKbObjectsByPipeline getAllKbObjectsByPipeline;
+    private final UpdateKbObjectRoles updateKbObjectRoles;
+    private final ResetKbObjectRoles resetKbObjectRoles;
+    private final GetAlignedResults getAlignedResults;
+    private final GetPublicationsByPmids getPublicationsByPmids;
+    private final Executor executor;
+    private final SessionUtils sessionUtils;
+
+    @POST
+    @Path("/build-pairs")
+    @ActivateRequestContext
+    public Response buildTreeMesh(@Valid BuildPairsRequest buildPairsRequest) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId);
+            } catch (Exception e) {
+                log.error("Error building pubmed pairs", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity(Map.of("message", "Building pubmed pairs"))
+                .build();
+    }
+
+    @POST
+    @Path("/search-pubmed-ids-by-pairs")
+    @ActivateRequestContext
+    public Response searchPairs(
+            @Valid SearchPairsByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);
+            } catch (Exception e) {
+                log.error("Error searching pubmed pairs", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity(Map.of("message", "Searching pubmed IDS by pairs"))
+                .build();
+    }
+
+    @POST
+    @Path("/search-pubtator-by-pmids")
+    @ActivateRequestContext
+    public Response searchPubtatorByPmids(
+            @Valid SearchPubtatorByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                searchPubtatorByPmids.execute(request.pipelineId(), userId);
+            } catch (Exception e) {
+                log.error("Error searching PubTator by pmids", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity(Map.of("message", "Searching PubTator by pmids"))
+                .build();
+    }
+
+    @POST
+    @Path("/generate-kb")
+    @ActivateRequestContext
+    public Response generateKb(
+            @Valid SearchPubtatorByPipelineRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                generateKbForPipeline.execute(request.pipelineId(), userId);
+            } catch (Exception e) {
+                log.error("Error generating KB for pipeline", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity(Map.of("message", "Knowledge base generation pipeline started"))
+                .build();
+    }
+
+    @POST
+    @Path("/generate-aligned-objects")
+    @ActivateRequestContext
+    public Response generateAlignedObjects(
+            @Valid GenerateAlignedObjectsRequest request
+    ) {
+
+        String userId = sessionUtils.getUserId();
+        CompletableFuture.runAsync(() -> {
+            try {
+                generateAlignedObjects.execute(request.pipelineId(), request.expertObjects(), userId);
+            } catch (Exception e) {
+                log.error("Error generating aligned objects", e);
+            }
+        }, executor);
+
+        return Response.accepted()
+                .entity(Map.of("message", "Aligned objects generation started"))
+                .build();
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}")
+    public Response getKbObjects(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        log.info("Request to get kb_objects for pipelineId=[{}], page=[{}], size=[{}]",
+                LogSanitizer.sanitize(pipelineId), page, size);
+        var paginatedResult = getPaginatedKbObjects.execute(pipelineId, page, size);
+        return Response.ok(paginatedResult).build();
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/by-name/{name}")
+    public Response getKbObjectByName(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("name") String name
+    ) {
+        log.info("Request to get kb_object for pipelineId=[{}], name=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
+        if (name == null || name.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'name' is required"))
+                    .build();
+        }
+        return getKbObjectByName.execute(pipelineId, name)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "KB object not found for pipelineId: " + pipelineId + " and name: " + name))
+                        .build());
+    }
+
+    @GET
+    @Path("/kb-objects/{pipelineId}/all")
+    public Response getAllKbObjects(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get all kb_objects for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        var objects = getAllKbObjectsByPipeline.execute(pipelineId);
+        return Response.ok(objects).build();
+    }
+
+    @PATCH
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response updateKbObjectRoles(
+            @PathParam("pipelineId") String pipelineId,
+            Map<String, List<String>> rolesMap
+    ) {
+        log.info("Request to update kb_object roles for pipelineId=[{}], count=[{}]",
+                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
+        updateKbObjectRoles.execute(pipelineId, rolesMap);
+        return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
+    }
+
+    @DELETE
+    @Path("/kb-objects/{pipelineId}/roles")
+    public Response resetKbObjectRoles(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to reset kb_object roles for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        resetKbObjectRoles.execute(pipelineId);
+        return Response.ok(Map.of("message", "Roles reset successfully in kb_objects")).build();
+    }
+
+    @GET
+    @Path("/synonyms/{pipelineId}")
+    public Response getSynonyms(
+            @PathParam("pipelineId") String pipelineId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("50") int size
+    ) {
+        return getKbObjects(pipelineId, page, size);
+    }
+
+    @GET
+    @Path("/synonyms/{pipelineId}/by-name/{name}")
+    public Response getSynonymsByName(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("name") String name
+    ) {
+        return getKbObjectByName(pipelineId, name);
+    }
+
+    @GET
+    @Path("/kb-events/{pipelineId}/by-term/{term}")
+    public Response getKbEventsByTerm(
+            @PathParam("pipelineId") String pipelineId,
+            @PathParam("term") String term
+    ) {
+        log.info("Request to get kb_events for pipelineId=[{}], term=[{}]",
+                LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term));
+        if (term == null || term.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'term' is required"))
+                    .build();
+        }
+        var events = getKbEventsByTerm.execute(pipelineId, term);
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/kb-events/{pipelineId}")
+    public Response getKbEventsByPipeline(
+            @PathParam("pipelineId") String pipelineId
+    ) {
+        log.info("Request to get all kb_events for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        var events = getKbEventsByPipeline.execute(pipelineId);
+        return Response.ok(events).build();
+    }
+
+    @POST
+    @Path("/kb-events/{pipelineId}/by-restriction")
+    public Response getKbEventsByRestriction(
+            @PathParam("pipelineId") String pipelineId,
+            KbEventsByRestrictionRequest request
+    ) {
+        log.info("Request to get kb_events by restriction for pipelineId=[{}], restrictionLevel=[{}]",
+                LogSanitizer.sanitize(pipelineId),
+                request != null ? LogSanitizer.sanitize(request.restrictionLevel()) : "null");
+        if (pipelineId == null || pipelineId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
+                    .build();
+        }
+        String level = request != null ? request.restrictionLevel() : null;
+        List<String> objects = request != null ? request.alignedObjects() : null;
+        var events = getKbEventsByRestriction.execute(pipelineId, level, objects);
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/aligned-results/{pipelineId}")
+    public Response getAlignedResults(@PathParam("pipelineId") String pipelineId) {
+        log.info("Request to get aligned results for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
+        return getAlignedResults.execute(pipelineId)
+                .map(result -> Response.ok(result).build())
+                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("message", "Aligned results not found for pipelineId: " + pipelineId))
+                        .build());
+    }
+
+    @POST
+    @Path("/publications/by-pmids")
+    public Response getPublicationsByPmids(@Valid GetPublicationsByPmidsRequest request) {
+        log.info("Request to get publications for {} PMIDs", request.pmids() != null ? request.pmids().size() : 0);
+        var publications = getPublicationsByPmids.execute(request.pmids());
+        return Response.ok(publications).build();
+    }
+
+}
