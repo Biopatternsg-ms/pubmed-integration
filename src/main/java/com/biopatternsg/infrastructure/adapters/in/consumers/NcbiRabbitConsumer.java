@@ -24,7 +24,7 @@ import com.biopatternsg.domain.ports.out.external_repositories.NcbiSearchRepoWeb
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
-import com.biopatternsg.mongo.SearchProgressCollection;
+import com.biopatternsg.domain.model.SearchProgress;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -61,17 +61,17 @@ public class NcbiRabbitConsumer {
         } catch (Exception e) {
             log.error("Error executing NCBI search for term=[{}]: {}", request.term(), e.getMessage(), e);
         } finally {
-            SearchProgressCollection progress = searchProgressRepository.incrementAndGet(request.pipelineId());
-            if (progress != null && progress.getCompletedCount() == progress.getTotalCount()) {
+            SearchProgress progress = searchProgressRepository.incrementAndGet(request.pipelineId());
+            if (progress != null && progress.isCompleted()) {
                 pairRepository.deleteByPipelineId(request.pipelineId());
-                log.info("Successfully deleted processed pairs for pipelineId=[{}] from database (all [{}] terms processed)", request.pipelineId(), progress.getTotalCount());
+                log.info("Successfully deleted processed pairs for pipelineId=[{}] from database (all [{}] terms processed)", request.pipelineId(), progress.totalCount());
 
                 List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(request.pipelineId());
                 long uniquePmids = rawPmids != null ? rawPmids.stream().filter(id -> id != null && id.trim().matches("\\d+")).distinct().count() : 0;
 
                 java.util.Map<String, String> metrics = java.util.Map.of(
                         "pubmedIdsFound", String.valueOf(uniquePmids),
-                        "pairsSearched", String.valueOf(progress.getTotalCount())
+                        "pairsSearched", String.valueOf(progress.totalCount())
                 );
 
                 configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId(), metrics);

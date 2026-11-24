@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.exception.AlignmentException;
 import com.biopatternsg.domain.model.AlignedAs;
 import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.ExpertObjectConfig;
@@ -25,7 +26,6 @@ import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlR
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
-import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +95,7 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
         } catch (Exception e) {
             log.error("Fatal error during expert objects alignment for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId), e);
             notifyStatus(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId);
-            throw new InternalServerError(e);
+            throw new AlignmentException("Failed to generate aligned objects for pipeline " + pipelineId, e);
         }
     }
 

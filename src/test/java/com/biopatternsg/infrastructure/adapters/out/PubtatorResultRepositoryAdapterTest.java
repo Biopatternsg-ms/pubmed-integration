@@ -16,7 +16,7 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.PubtatorResult;
-import com.biopatternsg.mongo.PubtatorResultCollection;
+import com.biopatternsg.infrastructure.mongo.PubtatorResultCollection;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import io.quarkus.mongodb.panache.PanacheQuery;

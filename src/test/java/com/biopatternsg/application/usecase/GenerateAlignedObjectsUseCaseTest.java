@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.exception.AlignmentException;
 import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.ExpertObjectConfig;
 import com.biopatternsg.domain.model.PipelineSteps;
@@ -22,7 +23,6 @@ import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
-import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,7 +102,7 @@ class GenerateAlignedObjectsUseCaseTest {
 
         // Act & Assert
         assertThatThrownBy(() -> generateAlignedObjectsUseCase.execute(pipelineId, expertObjects, userId))
-                .isInstanceOf(InternalServerError.class);
+                .isInstanceOf(AlignmentException.class);
 
         verify(configAndControlRepository).updateStep(eq(pipelineId), eq(PipelineSteps.GENERATE_ALIGNED_OBJECTS), eq(Status.FAILED), eq(userId), any());
     }

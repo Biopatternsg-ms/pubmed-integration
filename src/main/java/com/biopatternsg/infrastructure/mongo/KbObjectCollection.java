@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.mongo;
+package com.biopatternsg.infrastructure.mongo;
 
+import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
-@Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class AlignedAsEmbedded {
-    private String expertObjectName;
-    private List<String> alternativeIds;
+@Getter
+@MongoEntity(collection = "kb_objects")
+public class KbObjectCollection extends PanacheMongoEntity {
+    private String pipelineId;
+    private String name;
+    private List<String> synonyms;
+    private List<String> biotypes;
+    private List<String> roles;
 }

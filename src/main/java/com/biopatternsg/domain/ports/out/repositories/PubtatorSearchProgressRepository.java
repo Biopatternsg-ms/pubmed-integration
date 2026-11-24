@@ -15,10 +15,10 @@
  */
 package com.biopatternsg.domain.ports.out.repositories;
 
-import com.biopatternsg.mongo.PubtatorSearchProgressCollection;
+import com.biopatternsg.domain.model.SearchProgress;
 
 public interface PubtatorSearchProgressRepository {
     void initializeProgress(String pipelineId, int totalCount, String userId);
-    PubtatorSearchProgressCollection incrementAndGet(String pipelineId);
+    SearchProgress incrementAndGet(String pipelineId);
     void deleteByPipelineId(String pipelineId);
 }

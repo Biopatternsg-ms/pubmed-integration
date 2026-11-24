@@ -20,7 +20,7 @@ import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
-import com.biopatternsg.mongo.KbObjectCollection;
+import com.biopatternsg.infrastructure.mongo.KbObjectCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.BulkWriteOptions;
 import com.mongodb.client.model.Filters;

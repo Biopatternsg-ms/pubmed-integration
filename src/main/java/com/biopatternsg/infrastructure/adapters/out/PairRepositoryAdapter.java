@@ -15,8 +15,10 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
+import com.biopatternsg.domain.model.PipelinePairsBatch;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
-import com.biopatternsg.mongo.PairsCollection;
+import com.biopatternsg.infrastructure.mapper.PairMapper;
+import com.biopatternsg.infrastructure.mongo.PairsCollection;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PairRepositoryAdapter implements PairRepository, PanacheMongoRepository<PairsCollection> {
     @Override
-    public void save(PairsCollection pairsCollection) {
-        persistOrUpdate(pairsCollection);
+    public void save(PipelinePairsBatch batch) {
+        PairsCollection pairsCollection = PairMapper.modelToCollection(batch);
+        if (pairsCollection != null) {
+            persistOrUpdate(pairsCollection);
+        }
     }
 
     @Override
@@ -37,7 +42,7 @@ public class PairRepositoryAdapter implements PairRepository, PanacheMongoReposi
     }
 
     @Override
-    public List<PairsCollection> findByPipelineId(String pipelineId) {
-        return list("pipelineId", pipelineId);
+    public List<PipelinePairsBatch> findByPipelineId(String pipelineId) {
+        return PairMapper.collectionListToModel(list("pipelineId", pipelineId));
     }
 }

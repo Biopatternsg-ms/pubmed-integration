@@ -16,11 +16,12 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
+import com.biopatternsg.domain.model.PipelinePairsBatch;
+import com.biopatternsg.domain.model.TermPair;
 import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
-import com.biopatternsg.mongo.PairsCollection;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,18 +42,18 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
     public void execute(String pipelineId, int retmax, String userId) {
         log.info("Starting NCBI ESearch enqueuing for pipelineId=[{}] retmax=[{}]", pipelineId, retmax);
 
-        List<PairsCollection> collections = pairRepository.findByPipelineId(pipelineId);
+        List<PipelinePairsBatch> batches = pairRepository.findByPipelineId(pipelineId);
 
-        List<PairsCollection.Pair> allPairs = collections.stream()
-                .filter(c -> c.getPairs() != null)
-                .flatMap(c -> c.getPairs().stream())
+        List<TermPair> allPairs = batches.stream()
+                .filter(batch -> batch.pairs() != null)
+                .flatMap(batch -> batch.pairs().stream())
                 .filter(Objects::nonNull)
                 .toList();
 
-        log.info("Found [{}] PairsCollection documents for pipelineId=[{}]", allPairs.size(), pipelineId);
+        log.info("Found [{}] pairs for pipelineId=[{}]", allPairs.size(), pipelineId);
 
         List<String> terms = allPairs.stream()
-                .map(pair -> pair.getFirstTerm() + " AND " + pair.getSecondTerm())
+                .map(pair -> pair.firstTerm() + " AND " + pair.secondTerm())
                 .toList();
 
         log.info("Total pairs to enqueue for NCBI: [{}]", terms.size());

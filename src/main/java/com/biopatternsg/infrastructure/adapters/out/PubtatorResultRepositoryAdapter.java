@@ -17,7 +17,7 @@ package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
-import com.biopatternsg.mongo.PubtatorResultCollection;
+import com.biopatternsg.infrastructure.mongo.PubtatorResultCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;

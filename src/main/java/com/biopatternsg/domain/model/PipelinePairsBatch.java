@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.mongo;
+package com.biopatternsg.domain.model;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntity;
-import io.quarkus.mongodb.panache.common.MongoEntity;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.List;
 
-@Setter
-@Getter
-@MongoEntity(collection = "pubtator_search_progress")
-public class PubtatorSearchProgressCollection extends PanacheMongoEntity {
-    private String pipelineId;
-    private int completedCount;
-    private int totalCount;
-    private String userId;
+public record PipelinePairsBatch(
+        String pipelineId,
+        List<TermPair> pairs
+) {
+    public PipelinePairsBatch {
+        pairs = pairs != null ? List.copyOf(pairs) : List.of();
+    }
 }

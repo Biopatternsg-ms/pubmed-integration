@@ -15,8 +15,10 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
+import com.biopatternsg.domain.model.SearchProgress;
 import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
-import com.biopatternsg.mongo.SearchProgressCollection;
+import com.biopatternsg.infrastructure.mapper.SearchProgressMapper;
+import com.biopatternsg.infrastructure.mongo.SearchProgressCollection;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
@@ -41,12 +43,12 @@ public class SearchProgressRepositoryAdapter implements SearchProgressRepository
     }
 
     @Override
-    public SearchProgressCollection incrementAndGet(String pipelineId) {
+    public SearchProgress incrementAndGet(String pipelineId) {
         MongoCollection<SearchProgressCollection> collection = mongoCollection();
         Document filter = new Document("pipelineId", pipelineId);
         Document update = new Document("$inc", new Document("completedCount", 1));
         FindOneAndUpdateOptions options = new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER);
-        return collection.findOneAndUpdate(filter, update, options);
+        return SearchProgressMapper.collectionToModel(collection.findOneAndUpdate(filter, update, options));
     }
 
     @Override

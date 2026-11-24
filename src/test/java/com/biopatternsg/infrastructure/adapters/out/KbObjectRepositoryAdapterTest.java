@@ -16,7 +16,7 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.PubtatorResult;
-import com.biopatternsg.mongo.KbObjectCollection;
+import com.biopatternsg.infrastructure.mongo.KbObjectCollection;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;

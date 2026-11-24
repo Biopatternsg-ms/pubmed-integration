@@ -19,12 +19,13 @@ import com.biopatternsg.application.services.BiologicalObjectsService;
 import com.biopatternsg.application.util.PairsGenerator;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.model.Pair;
+import com.biopatternsg.domain.model.PipelinePairsBatch;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
+import com.biopatternsg.domain.model.TermPair;
 import com.biopatternsg.domain.ports.in.BuildPubmedPairs;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
-import com.biopatternsg.mongo.PairsCollection;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -75,8 +76,8 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
         log.info("Generated unique pairs FINISHED");
 
         long totalPairs = pairRepository.findByPipelineId(pipelineId).stream()
-                .filter(c -> c.getPairs() != null)
-                .mapToLong(c -> c.getPairs().size())
+                .filter(batch -> batch.pairs() != null)
+                .mapToLong(batch -> batch.pairs().size())
                 .sum();
 
         configAndControlRepository.updateStep(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, userId,
@@ -106,21 +107,10 @@ public class BuildPubmedPairsUseCase implements BuildPubmedPairs {
     }
 
     private void savePairs(Set<PairsGenerator.TermsPair> pairs, String pipelineId) {
-
-        PairsCollection toSave = new PairsCollection();
-        toSave.setPipelineId(pipelineId);
-        toSave.setPairs(
-                pairs.stream()
-                .map( p -> {
-
-                    PairsCollection.Pair pair = new PairsCollection.Pair();
-                    pair.setFirstTerm(p.first);
-                    pair.setSecondTerm(p.second);
-
-                    return pair;
-                }).collect(Collectors.toList()));
-
-        pairRepository.save(toSave);
+        List<TermPair> termPairs = pairs.stream()
+                .map(p -> new TermPair(p.first, p.second))
+                .toList();
+        pairRepository.save(new PipelinePairsBatch(pipelineId, termPairs));
     }
 
     private Set<PairsGenerator.TermsPair> processFirstLevel(String pipelineId, boolean useOnlyPrincipalName) {

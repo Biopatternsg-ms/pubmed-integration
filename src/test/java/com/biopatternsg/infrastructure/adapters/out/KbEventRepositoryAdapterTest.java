@@ -16,7 +16,7 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.KbEvent;
-import com.biopatternsg.mongo.KbEventCollection;
+import com.biopatternsg.infrastructure.mongo.KbEventCollection;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;

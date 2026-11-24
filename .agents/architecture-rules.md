@@ -21,9 +21,9 @@ This document establishes the mandatory **architectural rules, layer boundaries,
     - Contains Use Cases (`application.usecase.*`), Application Services (`application.services.*`, `application.services.impl.*`), and application utilities (`application.util.*`, e.g., `PairsGenerator`).
     - **MUST** depend only on `domain..` and **MUST NOT** depend on `infrastructure..`.
     - Can only be accessed from outer layers through Inbound Ports (`domain.ports.in.*`).
-    - *Legacy Persistence Boundary Note:* MongoDB Panache entities currently reside in `com.biopatternsg.mongo.*` and some legacy repository ports/use cases reference them directly. For all **new or refactored** Use Cases and Outbound Ports, strictly return and accept pure Domain Models (`domain.model.*`) rather than `com.biopatternsg.mongo.*` collections.
-3. **Infrastructure Layer (`com.biopatternsg.infrastructure.*` & `com.biopatternsg.mongo.*`):**
-    - Contains inbound delivery adapters (`adapters.in.restcontrollers.*`, `adapters.in.consumers.*`), outbound persistence, messaging, and external/internal adapters (`adapters.out.*`, `adapters.out.external_repositories.*`, `adapters.out.producers.*`), request/response DTOs (`adapters.dtos.*`, `clients.dtos.*`), MicroProfile HTTP clients (`clients.external.*`, `clients.internal.*`), service wrappers (`external_services.*`, `internal_services.*`), mappers (`mapper.*`), lifecycle hooks (`boot_functions.*`), request interceptors/session context (`config.interceptors.*`, `session.*`), infrastructure utilities (`util.SimpleRateLimiter`), and MongoDB Panache collections (`com.biopatternsg.mongo.*`).
+    - *Legacy Persistence Boundary Note:* MongoDB Panache entities currently reside in `com.biopatternsg.infrastructure.mongo.*` and some legacy repository ports/use cases reference them directly. For all **new or refactored** Use Cases and Outbound Ports, strictly return and accept pure Domain Models (`domain.model.*`) rather than `com.biopatternsg.infrastructure.mongo.*` collections.
+3. **Infrastructure Layer (`com.biopatternsg.infrastructure.*` & `com.biopatternsg.infrastructure.mongo.*`):**
+    - Contains inbound delivery adapters (`adapters.in.restcontrollers.*`, `adapters.in.consumers.*`), outbound persistence, messaging, and external/internal adapters (`adapters.out.*`, `adapters.out.external_repositories.*`, `adapters.out.producers.*`), request/response DTOs (`adapters.dtos.*`, `clients.dtos.*`), MicroProfile HTTP clients (`clients.external.*`, `clients.internal.*`), service wrappers (`external_services.*`, `internal_services.*`), mappers (`mapper.*`), lifecycle hooks (`boot_functions.*`), request interceptors/session context (`config.interceptors.*`, `session.*`), infrastructure utilities (`util.SimpleRateLimiter`), and MongoDB Panache collections (`com.biopatternsg.infrastructure.mongo.*`).
 
 ---
 
@@ -107,7 +107,7 @@ For any new or refactored Application Service:
 
 ### 5.1. Repository Adapters (`infrastructure.adapters.out.*`)
 - Implement repository interfaces defined in `com.biopatternsg.domain.ports.out.repositories.*` (`PairRepository`, `PubmedResultRepository`, `SearchProgressRepository`, `PubtatorPmidReaderRepository`, `PubtatorResultRepository`, `PubtatorSearchProgressRepository`, `KbEventRepository`, `KbObjectRepository`, `AlignedResultRepository`) using `PanacheMongoRepository<*>`.
-- Separate concerns: MongoDB collections (`com.biopatternsg.mongo.*`: `pairs`, `pubmed_results`, `search_progress`, `pubtator_results`, `pubtator_search_progress`, `kb_events`, `kb_objects`, `alignedResults`) must be converted to Domain Models (`domain.model.*`) via mappers before returning to the application layer in all new and refactored adapters.
+- Separate concerns: MongoDB collections (`com.biopatternsg.infrastructure.mongo.*`: `pairs`, `pubmed_results`, `search_progress`, `pubtator_results`, `pubtator_search_progress`, `kb_events`, `kb_objects`, `alignedResults`) must be converted to Domain Models (`domain.model.*`) via mappers before returning to the application layer in all new and refactored adapters.
 
 ### 5.2. Messaging Producer Adapters (`infrastructure.adapters.out.producers.*`)
 - Implement producer ports defined in `com.biopatternsg.domain.ports.out.producers.*`:

@@ -16,7 +16,7 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
-import com.biopatternsg.mongo.PubmedResultCollection;
+import com.biopatternsg.infrastructure.mongo.PubmedResultCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
