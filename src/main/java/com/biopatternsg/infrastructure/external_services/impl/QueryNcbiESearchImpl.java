@@ -67,15 +67,15 @@ public class QueryNcbiESearchImpl implements QueryNcbiESearch {
         NcbiESearchResponse response = ncbiESearchClient.search("pubmed", term, retmax, "json", tool, email, "relevance", apiKeyParam);
 
         NcbiESearchResultDto result = Optional.ofNullable(response)
-                .map(NcbiESearchResponse::getESearchResult)
+                .map(NcbiESearchResponse::eSearchResult)
                 .orElse(null);
 
         if (result == null) {
             return new NcbiSearchResult(term, 0, Collections.emptyList());
         }
 
-        int count = parseCount(result.getCount());
-        List<String> ids = Optional.ofNullable(result.getIdList()).orElse(Collections.emptyList());
+        int count = parseCount(result.count());
+        List<String> ids = Optional.ofNullable(result.idList()).orElse(Collections.emptyList());
 
         return new NcbiSearchResult(term, count, ids);
     }

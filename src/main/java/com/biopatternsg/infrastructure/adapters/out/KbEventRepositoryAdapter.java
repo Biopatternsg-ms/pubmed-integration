@@ -20,6 +20,7 @@ import com.biopatternsg.domain.model.KbEventKey;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
 import com.biopatternsg.domain.util.BiologicalTermNormalizer;
 import com.biopatternsg.domain.util.LogSanitizer;
+import com.biopatternsg.infrastructure.mapper.KbEventMapper;
 import com.biopatternsg.infrastructure.mongo.KbEventCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.Filters;
@@ -28,10 +29,8 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
@@ -44,7 +43,7 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
             String cleanSecond = BiologicalTermNormalizer.extractSuffix(key.second());
             KbEventCollection doc = find("pipelineId = ?1 and first = ?2 and relation = ?3 and second = ?4",
                     key.pipelineId(), cleanFirst, key.relation(), cleanSecond).firstResult();
-            return Optional.ofNullable(doc).map(this::toDomain);
+            return Optional.ofNullable(doc).map(KbEventMapper::collectionToModel);
         } catch (Exception e) {
             log.error("Error finding KbEvent [{}, {},{},{}]: {}",
                     LogSanitizer.sanitize(key.pipelineId()), LogSanitizer.sanitize(key.first()),
@@ -94,8 +93,8 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
             String regex = "^" + java.util.regex.Pattern.quote(cleanTerm) + "$";
             return find("{'pipelineId': ?1, '$or': [{'first': {'$regex': ?2, '$options': 'i'}}, {'second': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .stream()
-                    .map(this::toDomain)
-                    .collect(Collectors.toList());
+                    .map(KbEventMapper::collectionToModel)
+                    .toList();
         } catch (Exception e) {
             log.error("Error finding KbEvents for pipelineId=[{}] and term=[{}]: {}",
                     LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term), e.getMessage(), e);
@@ -111,23 +110,12 @@ public class KbEventRepositoryAdapter implements KbEventRepository, PanacheMongo
             }
             return find("pipelineId", pipelineId)
                     .stream()
-                    .map(this::toDomain)
-                    .collect(Collectors.toList());
+                    .map(KbEventMapper::collectionToModel)
+                    .toList();
         } catch (Exception e) {
             log.error("Error finding all KbEvents for pipelineId=[{}]: {}",
                     LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
         }
-    }
-
-    private KbEvent toDomain(KbEventCollection doc) {
-        return new KbEvent(
-                doc.id != null ? doc.id.toHexString() : null,
-                doc.getPipelineId(),
-                doc.getFirst(),
-                doc.getRelation(),
-                doc.getSecond(),
-                doc.getPubmedIds() != null ? doc.getPubmedIds() : new ArrayList<>()
-        );
     }
 }

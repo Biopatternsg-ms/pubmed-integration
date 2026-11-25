@@ -22,6 +22,7 @@ import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
 import com.biopatternsg.domain.util.BiologicalTermNormalizer;
 import com.biopatternsg.domain.util.LogSanitizer;
+import com.biopatternsg.infrastructure.mapper.KbObjectMapper;
 import com.biopatternsg.infrastructure.mongo.KbObjectCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.BulkWriteOptions;
@@ -187,21 +188,20 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
     @Override
     public PaginatedResult<KbObject> findByPipelineId(String pipelineId, int page, int size) {
         try {
+            int safePage = Math.max(page, 0);
             var query = find("pipelineId", pipelineId);
             long totalItems = query.count();
+            if (size <= 0) {
+                return new PaginatedResult<>(Collections.emptyList(), totalItems, 0, safePage, 0);
+            }
             int totalPages = (int) Math.ceil((double) totalItems / size);
 
-            List<KbObject> items = query.page(page, size)
+            List<KbObject> items = query.page(safePage, size)
                     .stream()
-                    .map(col -> new KbObject(
-                            col.getName(),
-                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
-                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
-                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
-                    ))
-                    .collect(Collectors.toList());
+                    .map(KbObjectMapper::collectionToModel)
+                    .toList();
 
-            return new PaginatedResult<>(items, totalItems, totalPages, page, size);
+            return new PaginatedResult<>(items, totalItems, totalPages, safePage, size);
         } catch (Exception e) {
             log.error("Error finding paginated KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
@@ -213,13 +213,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
         try {
             return find("pipelineId", pipelineId)
                     .stream()
-                    .map(col -> new KbObject(
-                            col.getName(),
-                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
-                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
-                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
-                    ))
-                    .collect(Collectors.toList());
+                    .map(KbObjectMapper::collectionToModel)
+                    .toList();
         } catch (Exception e) {
             log.error("Error finding all KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);
@@ -235,23 +230,13 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             String cleanName = name.trim();
             var exactResult = find("pipelineId = ?1 and name = ?2", pipelineId, cleanName).firstResultOptional();
             if (exactResult.isPresent()) {
-                return exactResult.map(col -> new KbObject(
-                        col.getName(),
-                        col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
-                        col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
-                        col.getRoles() != null ? col.getRoles() : Collections.emptyList()
-                ));
+                return exactResult.map(KbObjectMapper::collectionToModel);
             }
 
             String regex = "^" + java.util.regex.Pattern.quote(cleanName) + "$";
             return find("{'pipelineId': ?1, '$or': [{'name': {'$regex': ?2, '$options': 'i'}}, {'synonyms': {'$regex': ?2, '$options': 'i'}}]}", pipelineId, regex)
                     .firstResultOptional()
-                    .map(col -> new KbObject(
-                            col.getName(),
-                            col.getSynonyms() != null ? col.getSynonyms() : Collections.emptyList(),
-                            col.getBiotypes() != null ? col.getBiotypes() : Collections.emptyList(),
-                            col.getRoles() != null ? col.getRoles() : Collections.emptyList()
-                    ));
+                    .map(KbObjectMapper::collectionToModel);
         } catch (Exception e) {
             log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}",
                     LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);

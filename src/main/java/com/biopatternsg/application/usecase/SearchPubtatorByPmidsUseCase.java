@@ -21,7 +21,6 @@ import com.biopatternsg.domain.ports.out.producers.PubtatorQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorSearchProgressRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -29,16 +28,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@RequiredArgsConstructor
 @ApplicationScoped
 public class SearchPubtatorByPmidsUseCase implements SearchPubtatorByPmids {
 
     private final PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
     private final PubtatorQueueSender pubtatorQueueSender;
     private final PubtatorSearchProgressRepository pubtatorSearchProgressRepository;
+    private final int batchSize;
 
-    @ConfigProperty(name = "pubtator.batch-size")
-    int batchSize;
+    public SearchPubtatorByPmidsUseCase(
+            PubtatorPmidReaderRepository pubtatorPmidReaderRepository,
+            PubtatorQueueSender pubtatorQueueSender,
+            PubtatorSearchProgressRepository pubtatorSearchProgressRepository,
+            @ConfigProperty(name = "pubtator.batch-size", defaultValue = "50") int batchSize) {
+        this.pubtatorPmidReaderRepository = pubtatorPmidReaderRepository;
+        this.pubtatorQueueSender = pubtatorQueueSender;
+        this.pubtatorSearchProgressRepository = pubtatorSearchProgressRepository;
+        this.batchSize = batchSize;
+    }
 
     @Override
     public void execute(String pipelineId, String userId) {

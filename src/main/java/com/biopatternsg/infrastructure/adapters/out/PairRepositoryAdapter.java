@@ -21,12 +21,10 @@ import com.biopatternsg.infrastructure.mapper.PairMapper;
 import com.biopatternsg.infrastructure.mongo.PairsCollection;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @ApplicationScoped
-@RequiredArgsConstructor
 public class PairRepositoryAdapter implements PairRepository, PanacheMongoRepository<PairsCollection> {
     @Override
     public void save(PipelinePairsBatch batch) {

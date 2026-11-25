@@ -16,7 +16,10 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.PubtatorResult;
+import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.infrastructure.mongo.KbObjectCollection;
+import io.quarkus.mongodb.panache.PanacheQuery;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
@@ -306,5 +309,22 @@ class KbObjectRepositoryAdapterTest {
         BsonDocument synonymsDoc = updateDoc.getDocument("$addToSet").getDocument("synonyms");
         assertThat(synonymsDoc.getArray("$each")).hasSize(1);
         assertThat(synonymsDoc.getArray("$each").get(0).asString().getValue()).isEqualTo("MAP2");
+    }
+
+    @Test
+    @DisplayName("When size <= 0 or page < 0, findByPipelineId guards against division by zero and negative page")
+    @SuppressWarnings("unchecked")
+    void findByPipelineId_nonPositiveSizeAndNegativePage_guardsDivisionByZero() {
+        PanacheQuery<KbObjectCollection> mockQuery = mock(PanacheQuery.class);
+        when(mockQuery.count()).thenReturn(5L);
+        doReturn(mockQuery).when(adapter).find("pipelineId", PIPELINE_ID);
+
+        PaginatedResult<KbObject> result = adapter.findByPipelineId(PIPELINE_ID, -2, 0);
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.totalItems()).isEqualTo(5L);
+        assertThat(result.totalPages()).isZero();
+        assertThat(result.currentPage()).isZero();
+        assertThat(result.size()).isZero();
     }
 }

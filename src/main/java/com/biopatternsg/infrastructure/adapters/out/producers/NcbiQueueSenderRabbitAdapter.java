@@ -17,9 +17,8 @@ package com.biopatternsg.infrastructure.adapters.out.producers;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
-import jakarta.enterprise.context.ApplicationScoped;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
-import jakarta.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -29,10 +28,12 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 @ApplicationScoped
 public class NcbiQueueSenderRabbitAdapter implements NcbiQueueSender {
 
-    @Inject
-    @Channel("ncbi-out")
-    @OnOverflow(OnOverflow.Strategy.UNBOUNDED_BUFFER)
-    Emitter<NcbiSearchRequest> emitter;
+    private final Emitter<NcbiSearchRequest> emitter;
+
+    public NcbiQueueSenderRabbitAdapter(
+            @Channel("ncbi-out") @OnOverflow(OnOverflow.Strategy.UNBOUNDED_BUFFER) Emitter<NcbiSearchRequest> emitter) {
+        this.emitter = emitter;
+    }
 
     @Override
     public void send(NcbiSearchRequest request) {

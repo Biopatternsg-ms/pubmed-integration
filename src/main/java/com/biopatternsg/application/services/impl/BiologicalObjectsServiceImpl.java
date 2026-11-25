@@ -20,11 +20,9 @@ import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.ports.out.external_repositories.BiologicalObjectsRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-@Slf4j
 @RequiredArgsConstructor
 @ApplicationScoped
 public class BiologicalObjectsServiceImpl implements BiologicalObjectsService {
