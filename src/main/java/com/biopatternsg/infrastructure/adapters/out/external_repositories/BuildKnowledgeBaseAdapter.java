@@ -41,21 +41,15 @@ public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
     }
 
     @Override
-    public GenerateKbResult generateKnowledgeBase(
-            String pipelineId,
-            String pmid,
-            String title,
-            String text,
-            List<PubtatorResult.PubtatorObject> objects,
-            List<PubtatorResult.PubtatorEvent> events) {
+    public GenerateKbResult generateKnowledgeBase(String pipelineId, PubtatorResult pubtatorResult) {
 
         PubTatorDocumentRequest request = new PubTatorDocumentRequest(
                 pipelineId,
-                pmid,
-                title,
-                text,
-                objects,
-                events
+                pubtatorResult.pmid(),
+                pubtatorResult.title(),
+                pubtatorResult.text(),
+                pubtatorResult.objects(),
+                pubtatorResult.events()
         );
 
         GenerateKbResponse response = httpClient.generateKb(request);

@@ -94,7 +94,11 @@ public class PubmedController {
 
         String userId = sessionUtils.getUserId();
         runAsyncTask("building pubmed pairs", () ->
-                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId));
+                buildPubmedPairs.execute(new com.biopatternsg.domain.model.BuildPubmedPairsCommand(
+                        buildPairsRequest.pipelineId(),
+                        buildPairsRequest.useOnlyPrincipalName(),
+                        buildPairsRequest.levels(),
+                        userId)));
 
         return Response.accepted()
                 .entity(Map.of("message", "Building pubmed pairs"))

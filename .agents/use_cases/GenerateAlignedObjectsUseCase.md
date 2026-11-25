@@ -12,24 +12,19 @@ After the Knowledge Base is generated for a pipeline, expert-defined biological 
   - `com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository`
     - `void save(AlignedResult alignedResult)`
   - `com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository`
-    - `void updateStep(String pipelineId, PipelineSteps step, Status status, String userId)`
-    - `void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics)`
-- **Application Services:** None.
+    - `void updateStep(PipelineStepUpdate update)`
+- **Application Services:**
+  - `com.biopatternsg.application.services.ExpertObjectAlignmentService`
+    - `AlignedResult align(String pipelineId, List<ExpertObjectConfig> expertObjects, Map<String, List<String>> synonymsMap)`
 - **Delivery Adapter:** `PubmedController#generateAlignedObjects` (`POST /pubmed/generate-aligned-objects`, executed asynchronously via `CompletableFuture.runAsync(...)` with `202 Accepted`; captures `userId` from `SessionUtils`).
 
 ## 3. Execution Flow
 1. Default a `null` `expertObjects` list to an empty list.
 2. Fetch the pipeline's synonym dictionary (`name -> synonyms`) via `kbObjectRepository.findAllSynonymsByPipelineId(pipelineId)`.
-3. Normalize expert object symbols (`ExpertObjectConfig::symbol`): filter out null/blank values, uppercase, and deduplicate into `userObjects`.
-4. Normalize the synonyms map by uppercasing all keys and non-blank synonym values (merging duplicate uppercased keys cleanly) into `synonymsMapUpper`.
-5. Compute `aligned`: expert symbols that directly match a key in `synonymsMapUpper`.
-6. Build `invertedSynonyms` (`synonym -> List<mainId>`) from `synonymsMapUpper`.
-7. Compute `alignedAsList`: for each expert symbol present in `invertedSynonyms`, emit an `AlignedAs(name, altIds)` whenever `altIds.size() > 1` or the single matched `mainId` differs from `name`.
-8. Compute `noAligned`: expert symbols not present in `invertedSynonyms` (or mapping to an empty list).
-9. Compute `alignedAndAlternatives`: union of `aligned` and all `alternativeIds` across `alignedAsList`.
-10. Persist the `AlignedResult(pipelineId, aligned, noAligned, alignedAsList, alignedAndAlternatives)` via `alignedResultRepository.save(...)`.
-11. Notify `config-and-control` with `PipelineSteps.GENERATE_ALIGNED_OBJECTS`, `Status.COMPLETED`, `userId`, and metrics (`alignedObjects`, `notAlignedObjects`).
-12. On any unexpected exception, notify `Status.FAILED` to `config-and-control` and rethrow wrapped in `InternalServerError`.
+3. Delegate symbol normalization, inverted-synonym indexing, and alignment calculation (`aligned`, `alignedAs`, `noAligned`, `alignedAndAlternatives`) to `expertObjectAlignmentService.align(pipelineId, safeExpertObjects, safeSynonyms)`.
+4. Persist the returned `AlignedResult` via `alignedResultRepository.save(alignedResult)`.
+5. Notify `config-and-control` via `configAndControlRepository.updateStep(PipelineStepUpdate.withMetrics(pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.COMPLETED, userId, metrics))`.
+6. On any unexpected exception, notify `Status.FAILED` via `PipelineStepUpdate.of(...)` and throw `AlignmentException`.
 
 ## 4. Sequence Diagram
 ```mermaid
@@ -37,17 +32,18 @@ sequenceDiagram
     participant C as PubmedController
     participant UC as GenerateAlignedObjectsUseCase
     participant KOR as KbObjectRepository
+    participant EAS as ExpertObjectAlignmentService
     participant ARR as AlignedResultRepository
     participant CC as ConfigAndControlRepository
 
     C->>UC: execute(pipelineId, expertObjects, userId) [async]
     UC->>KOR: findAllSynonymsByPipelineId(pipelineId)
     KOR-->>UC: Map<String, List<String>> (synonymsMap)
-    UC->>UC: Normalize symbols & build inverted synonym index
-    UC->>UC: Compute aligned, alignedAs, noAligned, alignedAndAlternatives
+    UC->>EAS: align(pipelineId, expertObjects, synonymsMap)
+    EAS-->>UC: AlignedResult
     UC->>ARR: save(AlignedResult)
     ARR-->>UC: void
-    UC->>CC: updateStep(pipelineId, GENERATE_ALIGNED_OBJECTS, COMPLETED, userId, metrics)
+    UC->>CC: updateStep(PipelineStepUpdate.withMetrics(...))
 ```
 
 ## 5. Exceptions, Caching, and Failure Scenarios

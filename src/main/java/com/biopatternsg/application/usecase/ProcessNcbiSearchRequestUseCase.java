@@ -17,6 +17,7 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.model.NcbiSearchResult;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.SearchProgress;
 import com.biopatternsg.domain.model.Status;
@@ -90,13 +91,13 @@ public class ProcessNcbiSearchRequestUseCase implements ProcessNcbiSearchRequest
                 "pairsSearched", String.valueOf(progress.totalCount())
         );
 
-        configAndControlRepository.updateStep(
+        configAndControlRepository.updateStep(PipelineStepUpdate.withMetrics(
                 request.pipelineId(),
                 PipelineSteps.SEARCH_PUBMED_IDS,
                 Status.COMPLETED,
                 request.userId(),
                 metrics
-        );
+        ));
         searchProgressRepository.deleteByPipelineId(request.pipelineId());
     }
 }

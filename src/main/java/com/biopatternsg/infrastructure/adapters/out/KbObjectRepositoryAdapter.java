@@ -16,9 +16,11 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.model.KbObject;
+import com.biopatternsg.domain.model.KbObjectUpsertCommand;
 import com.biopatternsg.domain.model.PaginatedResult;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
+import com.biopatternsg.domain.util.BiologicalTermNormalizer;
 import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.infrastructure.mongo.KbObjectCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
@@ -40,15 +42,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
 public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMongoRepository<KbObjectCollection> {
-
-    private static final Pattern PREFIX_SUFFIX_PATTERN = Pattern.compile("^@([^_]+)_(.+)$");
 
     @Override
     public void saveKbObjects(String pipelineId, Map<String, List<String>> synonyms, Map<String, String> biotypes) {
@@ -57,7 +55,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
         }
 
         for (Map.Entry<String, List<String>> entry : synonyms.entrySet()) {
-            upsertKbObject(pipelineId, entry.getKey(), entry.getValue(), biotypes, null);
+            upsertKbObject(pipelineId, new KbObjectUpsertCommand(entry.getKey(), entry.getValue(), biotypes, null));
         }
     }
 
@@ -69,33 +67,27 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
 
         for (PubtatorResult.KbObjectItem obj : objects) {
             if (obj != null) {
-                upsertKbObject(pipelineId, obj.name(), obj.synonyms(), null, obj.biotypes());
+                upsertKbObject(pipelineId, new KbObjectUpsertCommand(obj.name(), obj.synonyms(), null, obj.biotypes()));
             }
         }
     }
 
-    private void upsertKbObject(
-            String pipelineId,
-            String rawName,
-            List<String> synonymList,
-            Map<String, String> biotypes,
-            List<String> itemBiotypes
-    ) {
-        if (rawName == null || rawName.isBlank() || synonymList == null || synonymList.isEmpty()) {
+    private void upsertKbObject(String pipelineId, KbObjectUpsertCommand command) {
+        String rawName = command.rawName();
+        List<String> synonymList = command.synonyms();
+        Map<String, String> biotypes = command.biotypes();
+        List<String> itemBiotypes = command.itemBiotypes();
+
+        if (rawName == null || rawName.isBlank() || synonymList.isEmpty()) {
             return;
         }
 
-        String name = rawName.trim();
-        String extractedBiotype = null;
+        BiologicalTermNormalizer.NormalizedTerm normalized = BiologicalTermNormalizer.normalize(rawName);
+        String name = normalized.term();
+        String extractedBiotype = normalized.biotypePrefix();
         List<String> processedSynonyms;
 
-        Matcher matcher = PREFIX_SUFFIX_PATTERN.matcher(name);
-        if (matcher.matches()) {
-            extractedBiotype = matcher.group(1).trim().toUpperCase();
-            String suffix = matcher.group(2).trim();
-            if (!suffix.isBlank()) {
-                name = suffix;
-            }
+        if (extractedBiotype != null) {
             // En los casos @PREFIJO_SUFIJO, en los sinonimos se guarda el sufijo solamente
             processedSynonyms = List.of(name);
         } else {

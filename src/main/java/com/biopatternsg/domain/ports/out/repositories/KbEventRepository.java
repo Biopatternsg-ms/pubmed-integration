@@ -16,6 +16,7 @@
 package com.biopatternsg.domain.ports.out.repositories;
 
 import com.biopatternsg.domain.model.KbEvent;
+import com.biopatternsg.domain.model.KbEventKey;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,14 +30,14 @@ public interface KbEventRepository {
      *
      * @return el evento encontrado, o empty si no existe.
      */
-    Optional<KbEvent> findByRelation(String pipelineId, String first, String relation, String second);
+    Optional<KbEvent> findByRelation(KbEventKey key);
 
     /**
      * Realiza un registro o actualización atómica (upsert) en MongoDB.
      * Si la combinación (pipelineId, first, relation, second) no existe, crea el documento con sus pubmedIds.
      * Si ya existe, añade únicamente los pubmedIds que no estén en la lista.
      */
-    void upsert(String pipelineId, String first, String relation, String second, List<String> pubmedIds);
+    void upsert(KbEvent event);
 
     /**
      * Busca todos los eventos biológicos asociados a un pipelineId donde 'first' o 'second' coincida con el término.
@@ -47,10 +48,4 @@ public interface KbEventRepository {
      * Busca todos los eventos biológicos asociados a un pipelineId.
      */
     List<KbEvent> findByPipelineId(String pipelineId);
-
-    /**
-     * Busca los eventos biológicos asociados a un pipelineId filtrados según el nivel de restricción
-     * (VERY_RESTRICTED, RESTRICTED, UNRESTRICTED) y la lista de objetos alineados.
-     */
-    List<KbEvent> findByPipelineIdAndRestriction(String pipelineId, String restrictionLevel, List<String> alignedObjects);
 }

@@ -15,18 +15,18 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.application.services.ExpertObjectAlignmentService;
 import com.biopatternsg.domain.exception.AlignmentException;
 import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.ExpertObjectConfig;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.KbObjectRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -34,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -50,60 +49,52 @@ class GenerateAlignedObjectsUseCaseTest {
     @Mock
     private ConfigAndControlRepository configAndControlRepository;
 
+    @Mock
+    private ExpertObjectAlignmentService expertObjectAlignmentService;
+
     @InjectMocks
     private GenerateAlignedObjectsUseCase generateAlignedObjectsUseCase;
 
     private final String pipelineId = "pipe-123";
     private final String userId = "user-456";
 
-    @BeforeEach
-    void setUp() {
-    }
-
     @Test
-    void execute_ShouldAlignObjectsCorrectly_WhenExpertObjectsAndSynonymsExist() {
-        // Arrange
+    void execute_ShouldAlignObjectsAndNotifyCompleted_WhenSuccess() {
         List<ExpertObjectConfig> expertObjects = List.of(
                 new ExpertObjectConfig("P04637", "HGNC:11998", "TP53"),
-                new ExpertObjectConfig("P38398", "HGNC:1100", "BRCA1"),
                 new ExpertObjectConfig("P01116", "HGNC:6407", "KRAS")
         );
-
-        Map<String, List<String>> synonymsMap = Map.of(
-                "TP53", List.of("TP53", "p53", "P53_HUMAN"),
-                "BRCA1", List.of("BRCA1")
-        );
+        Map<String, List<String>> synonymsMap = Map.of("TP53", List.of("TP53", "p53"));
+        AlignedResult alignedResult = new AlignedResult(
+                pipelineId, List.of("TP53"), List.of("KRAS"), List.of(), List.of("TP53"));
 
         when(kbObjectRepository.findAllSynonymsByPipelineId(pipelineId)).thenReturn(synonymsMap);
+        when(expertObjectAlignmentService.align(pipelineId, expertObjects, synonymsMap)).thenReturn(alignedResult);
 
-        // Act
         generateAlignedObjectsUseCase.execute(pipelineId, expertObjects, userId);
 
-        // Assert
-        ArgumentCaptor<AlignedResult> captor = ArgumentCaptor.forClass(AlignedResult.class);
-        verify(alignedResultRepository).save(captor.capture());
-        AlignedResult savedResult = captor.getValue();
-
-        assertThat(savedResult.pipelineId()).isEqualTo(pipelineId);
-        assertThat(savedResult.aligned()).containsExactlyInAnyOrder("TP53", "BRCA1");
-        assertThat(savedResult.noAligned()).containsExactlyInAnyOrder("KRAS");
-
-        verify(configAndControlRepository).updateStep(eq(pipelineId), eq(PipelineSteps.GENERATE_ALIGNED_OBJECTS), eq(Status.COMPLETED), eq(userId), any());
+        verify(alignedResultRepository).save(alignedResult);
+        verify(configAndControlRepository).updateStep(PipelineStepUpdate.withMetrics(
+                pipelineId,
+                PipelineSteps.GENERATE_ALIGNED_OBJECTS,
+                Status.COMPLETED,
+                userId,
+                Map.of("alignedObjects", "1", "notAlignedObjects", "1")
+        ));
     }
 
     @Test
     void execute_ShouldNotifyFailedStatus_WhenExceptionOccurs() {
-        // Arrange
         List<ExpertObjectConfig> expertObjects = List.of(
                 new ExpertObjectConfig("P04637", "HGNC:11998", "TP53")
         );
         when(kbObjectRepository.findAllSynonymsByPipelineId(pipelineId))
                 .thenThrow(new RuntimeException("Database error"));
 
-        // Act & Assert
         assertThatThrownBy(() -> generateAlignedObjectsUseCase.execute(pipelineId, expertObjects, userId))
                 .isInstanceOf(AlignmentException.class);
 
-        verify(configAndControlRepository).updateStep(eq(pipelineId), eq(PipelineSteps.GENERATE_ALIGNED_OBJECTS), eq(Status.FAILED), eq(userId), any());
+        verify(configAndControlRepository).updateStep(PipelineStepUpdate.of(
+                pipelineId, PipelineSteps.GENERATE_ALIGNED_OBJECTS, Status.FAILED, userId));
     }
 }

@@ -8,14 +8,15 @@ When constructing biological networks or executing inference queries, researcher
   - `List<KbEvent> execute(String pipelineId, String restrictionLevel, List<String> alignedObjects)`
 - **Outbound Ports:**
   - `com.biopatternsg.domain.ports.out.repositories.KbEventRepository`
-    - `List<KbEvent> findByPipelineIdAndRestriction(String pipelineId, String restrictionLevel, List<String> alignedObjects)`
+    - `List<KbEvent> findByPipelineId(String pipelineId)`
 - **Application Services:** None.
 - **Delivery Adapter:** `PubmedController#getKbEventsByRestriction` (`POST /pubmed/kb-events/{pipelineId}/by-restriction`, accepts `KbEventsByRestrictionRequest(restrictionLevel, alignedObjects)`, returns `200 OK`, or `400 Bad Request` when `pipelineId` is blank).
 
 ## 3. Execution Flow
 1. Log the request with sanitized `pipelineId`, sanitized `restrictionLevel`, and the count of `alignedObjects`.
 2. Guard against invalid input: if `pipelineId` is `null` or blank, return `Collections.emptyList()`.
-3. Delegate filtering to `kbEventRepository.findByPipelineIdAndRestriction(pipelineId, restrictionLevel, alignedObjects)` and return the resulting `List<KbEvent>`.
+3. Retrieve all events for the pipeline via `kbEventRepository.findByPipelineId(pipelineId)`.
+4. Parse `restrictionLevel` into `RestrictionLevel` (`UNRESTRICTED`, `RESTRICTED`, `VERY_RESTRICTED`) via `RestrictionLevel.fromString(restrictionLevel)` and filter the events in the application layer using an enhanced `switch` expression against normalized `alignedObjects`.
 
 ## 4. Sequence Diagram
 ```mermaid
@@ -28,8 +29,9 @@ sequenceDiagram
     alt pipelineId is null or blank
         UC-->>C: Collections.emptyList()
     else valid pipelineId
-        UC->>KER: findByPipelineIdAndRestriction(pipelineId, restrictionLevel, alignedObjects)
+        UC->>KER: findByPipelineId(pipelineId)
         KER-->>UC: List<KbEvent>
+        UC->>UC: Filter via RestrictionLevel & alignedObjects
         UC-->>C: List<KbEvent>
     end
 ```

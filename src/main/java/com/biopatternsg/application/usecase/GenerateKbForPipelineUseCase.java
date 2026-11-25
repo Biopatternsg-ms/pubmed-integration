@@ -15,6 +15,8 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.KbEvent;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
@@ -81,7 +83,8 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
             if (allPmids.isEmpty()) {
                 log.warn("No valid numeric PMIDs found for pipelineId=[{}]. Aborting KB generation.", LogSanitizer.sanitize(pipelineId));
-                configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, null);
+                configAndControlRepository.updateStep(PipelineStepUpdate.of(
+                        pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId));
                 return;
             }
 
@@ -131,10 +134,12 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                     "pmidsWithErrors", String.valueOf(errorCount.get())
             );
 
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, metrics);
+            configAndControlRepository.updateStep(PipelineStepUpdate.withMetrics(
+                    pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, userId, metrics));
         } catch (Exception e) {
             log.error("Fatal error during KB generation for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId), e);
-            configAndControlRepository.updateStep(pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId, null);
+            configAndControlRepository.updateStep(PipelineStepUpdate.of(
+                    pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId));
         }
     }
 
@@ -149,14 +154,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         }
 
         log.debug("Sending PMID=[{}] to build-knowledge-base endpoint", pmid);
-        GenerateKbResult kbResult = buildKnowledgeBaseRepoWeb.generateKnowledgeBase(
-                pipelineId,
-                pubtatorResult.pmid(),
-                pubtatorResult.title(),
-                pubtatorResult.text(),
-                pubtatorResult.objects(),
-                pubtatorResult.events()
-        );
+        GenerateKbResult kbResult = buildKnowledgeBaseRepoWeb.generateKnowledgeBase(pipelineId, pubtatorResult);
         log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}], biotypes=[{}].",
                 pmid,
                 kbResult.events() != null ? kbResult.events().size() : 0,
@@ -177,13 +175,13 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         List<String> pubmedIds = List.of(pmid);
         for (var kbEvent : kbEvents) {
             try {
-                kbEventRepository.upsert(
+                kbEventRepository.upsert(new KbEvent(
                         pipelineId,
                         kbEvent.first(),
                         kbEvent.relation(),
                         kbEvent.second(),
                         pubmedIds
-                );
+                ));
             } catch (Exception e) {
                 log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", LogSanitizer.sanitize(pipelineId), kbEvent.first(), kbEvent.relation(), kbEvent.second(), e.getMessage(), e);
             }

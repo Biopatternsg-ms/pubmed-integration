@@ -15,6 +15,8 @@
  */
 package com.biopatternsg.domain.ports.in;
 
+import com.biopatternsg.domain.model.BuildPubmedPairsCommand;
+
 public interface BuildPubmedPairs {
-    void execute(String pipelineId, boolean useShortName, int levels, String userId);
+    void execute(BuildPubmedPairsCommand command);
 }

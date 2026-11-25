@@ -17,6 +17,7 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
 import com.biopatternsg.domain.model.NcbiSearchResult;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.SearchProgress;
 import com.biopatternsg.domain.model.Status;
@@ -67,7 +68,7 @@ class ProcessNcbiSearchRequestUseCaseTest {
         verify(pubmedResultRepository).save("pipe-1", "111");
         verify(pubmedResultRepository).save("pipe-1", "222");
         verify(pairRepository, never()).deleteByPipelineId(any());
-        verify(configAndControlRepository, never()).updateStep(any(), any(), any(), any(), any());
+        verify(configAndControlRepository, never()).updateStep(any());
     }
 
     @Test
@@ -83,13 +84,13 @@ class ProcessNcbiSearchRequestUseCaseTest {
         useCase.execute(request);
 
         verify(pairRepository).deleteByPipelineId("pipe-1");
-        verify(configAndControlRepository).updateStep(
-                eq("pipe-1"),
-                eq(PipelineSteps.SEARCH_PUBMED_IDS),
-                eq(Status.COMPLETED),
-                eq("user-1"),
-                eq(Map.of("pubmedIdsFound", "2", "pairsSearched", "2"))
-        );
+        verify(configAndControlRepository).updateStep(PipelineStepUpdate.withMetrics(
+                "pipe-1",
+                PipelineSteps.SEARCH_PUBMED_IDS,
+                Status.COMPLETED,
+                "user-1",
+                Map.of("pubmedIdsFound", "2", "pairsSearched", "2")
+        ));
         verify(searchProgressRepository).deleteByPipelineId("pipe-1");
     }
 
@@ -104,12 +105,12 @@ class ProcessNcbiSearchRequestUseCaseTest {
         useCase.execute(request);
 
         verify(pairRepository).deleteByPipelineId("pipe-1");
-        verify(configAndControlRepository).updateStep(
-                eq("pipe-1"),
-                eq(PipelineSteps.SEARCH_PUBMED_IDS),
-                eq(Status.COMPLETED),
-                eq("user-1"),
-                eq(Map.of("pubmedIdsFound", "0", "pairsSearched", "1"))
-        );
+        verify(configAndControlRepository).updateStep(PipelineStepUpdate.withMetrics(
+                "pipe-1",
+                PipelineSteps.SEARCH_PUBMED_IDS,
+                Status.COMPLETED,
+                "user-1",
+                Map.of("pubmedIdsFound", "0", "pairsSearched", "1")
+        ));
     }
 }

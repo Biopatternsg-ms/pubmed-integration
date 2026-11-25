@@ -15,9 +15,8 @@
  */
 package com.biopatternsg.infrastructure.internal_services;
 
-import java.util.Map;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 
 public interface QueryConfigAndControl {
-    void updateStep(String pipelineId, String step, String status, String userId);
-    void updateStep(String pipelineId, String step, String status, String userId, Map<String, String> metrics);
+    void updateStep(PipelineStepUpdate update);
 }
