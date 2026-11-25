@@ -16,67 +16,23 @@
 package com.biopatternsg.infrastructure.adapters.in.consumers;
 
 import com.biopatternsg.domain.model.NcbiSearchRequest;
-import com.biopatternsg.domain.model.NcbiSearchResult;
-import com.biopatternsg.domain.model.PipelineSteps;
-import com.biopatternsg.domain.model.Status;
-import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
-import com.biopatternsg.domain.ports.out.external_repositories.NcbiSearchRepoWeb;
-import com.biopatternsg.domain.ports.out.repositories.PairRepository;
-import com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository;
-import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
-import com.biopatternsg.domain.model.SearchProgress;
+import com.biopatternsg.domain.ports.in.ProcessNcbiSearchRequest;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import java.util.List;
-
-@Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
 public class NcbiRabbitConsumer {
 
-    private final NcbiSearchRepoWeb ncbiSearchRepoWeb;
-    private final PubmedResultRepository pubmedResultRepository;
-    private final PairRepository pairRepository;
-    private final ConfigAndControlRepository configAndControlRepository;
-    private final SearchProgressRepository searchProgressRepository;
-    private final com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository pubtatorPmidReaderRepository;
+    private final ProcessNcbiSearchRequest processNcbiSearchRequest;
 
     @Incoming("ncbi-in")
     @Blocking(ordered = false)
     public void consume(JsonObject jsonMsg) {
         NcbiSearchRequest request = jsonMsg.mapTo(NcbiSearchRequest.class);
-
-        try {
-            NcbiSearchResult result = ncbiSearchRepoWeb.search(request.term(), request.retmax());
-            log.info("NCBI search response: term=[{}] count=[{}] ids={}", result.term(), result.count(), result.ids());
-
-            for (String pubmedId : result.ids()) {
-                pubmedResultRepository.save(request.pipelineId(), pubmedId);
-            }
-        } catch (Exception e) {
-            log.error("Error executing NCBI search for term=[{}]: {}", request.term(), e.getMessage(), e);
-        } finally {
-            SearchProgress progress = searchProgressRepository.incrementAndGet(request.pipelineId());
-            if (progress != null && progress.isCompleted()) {
-                pairRepository.deleteByPipelineId(request.pipelineId());
-                log.info("Successfully deleted processed pairs for pipelineId=[{}] from database (all [{}] terms processed)", request.pipelineId(), progress.totalCount());
-
-                List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(request.pipelineId());
-                long uniquePmids = rawPmids != null ? rawPmids.stream().filter(id -> id != null && id.trim().matches("\\d+")).distinct().count() : 0;
-
-                java.util.Map<String, String> metrics = java.util.Map.of(
-                        "pubmedIdsFound", String.valueOf(uniquePmids),
-                        "pairsSearched", String.valueOf(progress.totalCount())
-                );
-
-                configAndControlRepository.updateStep(request.pipelineId(), PipelineSteps.SEARCH_PUBMED_IDS, Status.COMPLETED, request.userId(), metrics);
-                searchProgressRepository.deleteByPipelineId(request.pipelineId());
-            }
-        }
+        processNcbiSearchRequest.execute(request);
     }
 }

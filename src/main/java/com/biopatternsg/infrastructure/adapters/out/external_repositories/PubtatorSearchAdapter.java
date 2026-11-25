@@ -15,23 +15,37 @@
  */
 package com.biopatternsg.infrastructure.adapters.out.external_repositories;
 
+import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.external_repositories.PubtatorSearchRepoWeb;
+import com.biopatternsg.infrastructure.adapters.in.consumers.PubtatorResponseParser;
 import com.biopatternsg.infrastructure.external_services.QueryPubtator;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 
 @ApplicationScoped
 public class PubtatorSearchAdapter implements PubtatorSearchRepoWeb {
 
     private final QueryPubtator queryPubtator;
+    private final PubtatorResponseParser pubtatorResponseParser;
 
-    public PubtatorSearchAdapter(QueryPubtator queryPubtator) {
+    public PubtatorSearchAdapter(
+            QueryPubtator queryPubtator,
+            PubtatorResponseParser pubtatorResponseParser
+    ) {
         this.queryPubtator = queryPubtator;
+        this.pubtatorResponseParser = pubtatorResponseParser;
     }
 
     @Override
-    public String search(List<String> pmids) {
-        return queryPubtator.search(pmids);
+    public List<PubtatorResult> search(List<String> pmids) {
+        String responseJson = queryPubtator.search(pmids);
+        try {
+            return pubtatorResponseParser.parse(responseJson);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to parse PubTator response", e);
+        }
     }
 }
