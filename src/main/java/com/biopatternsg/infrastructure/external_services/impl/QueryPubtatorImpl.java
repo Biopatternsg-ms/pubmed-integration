@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.infrastructure.external_services.impl;
 
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.biopatternsg.infrastructure.clients.external.PubtatorClient;
 import com.biopatternsg.infrastructure.external_services.QueryPubtator;
 import com.biopatternsg.infrastructure.util.SimpleRateLimiter;
@@ -56,7 +57,7 @@ public class QueryPubtatorImpl implements QueryPubtator {
 
         rateLimiter.acquire();
         String pmidsParam = String.join(",", cleanPmids);
-        log.debug("Querying PubTator for PMIDs: {}", pmidsParam);
+        log.debug("Querying PubTator for PMIDs: {}", LogSanitizer.sanitize(pmidsParam));
         return pubtatorClient.exportBiocJson(pmidsParam);
     }
 }

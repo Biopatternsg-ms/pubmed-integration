@@ -17,6 +17,7 @@ package com.biopatternsg.infrastructure.adapters.out.producers;
 
 import com.biopatternsg.domain.model.PubtatorSearchRequest;
 import com.biopatternsg.domain.ports.out.producers.PubtatorQueueSender;
+import com.biopatternsg.domain.util.LogSanitizer;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,8 @@ public class PubtatorQueueSenderRabbitAdapter implements PubtatorQueueSender {
         try {
             emitter.send(request);
         } catch (Exception e) {
-            log.error("Failed to send PubTator message to RabbitMQ: pipelineId=[{}], batchIndex=[{}]", request.pipelineId(), request.batchIndex(), e);
+            log.error("Failed to send PubTator message to RabbitMQ: pipelineId=[{}], batchIndex=[{}]",
+                    LogSanitizer.sanitize(request.pipelineId()), request.batchIndex(), e);
             throw new InternalServerError(e);
         }
     }

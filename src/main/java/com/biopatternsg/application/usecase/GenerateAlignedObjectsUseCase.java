@@ -61,7 +61,9 @@ public class GenerateAlignedObjectsUseCase implements GenerateAlignedObjects {
     public void execute(String pipelineId, List<ExpertObjectConfig> expertObjects, String userId) {
         List<ExpertObjectConfig> safeExpertObjects = expertObjects != null ? expertObjects : Collections.emptyList();
         log.info("Starting expert objects alignment for pipelineId=[{}] with [{}] expert objects [{}]",
-                LogSanitizer.sanitize(pipelineId), safeExpertObjects.size(), safeExpertObjects.stream().map(ExpertObjectConfig::symbol).toList());
+                LogSanitizer.sanitize(pipelineId),
+                safeExpertObjects.size(),
+                LogSanitizer.sanitizeCollection(safeExpertObjects.stream().map(ExpertObjectConfig::symbol).toList()));
 
         try {
             Map<String, List<String>> synonymsMap = kbObjectRepository.findAllSynonymsByPipelineId(pipelineId);

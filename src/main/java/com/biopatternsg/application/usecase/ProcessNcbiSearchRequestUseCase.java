@@ -51,21 +51,21 @@ public class ProcessNcbiSearchRequestUseCase implements ProcessNcbiSearchRequest
     @Override
     public void execute(NcbiSearchRequest request) {
         if (request == null || request.pipelineId() == null || request.pipelineId().isBlank()) {
-            log.warn("Ignoring invalid NCBI search request: [{}]", request);
+            log.warn("Ignoring invalid NCBI search request: [{}]", LogSanitizer.sanitize(request));
             return;
         }
 
         try {
             NcbiSearchResult result = ncbiSearchRepoWeb.search(request.term(), request.retmax());
             log.info("NCBI search response: term=[{}] count=[{}] ids={}",
-                    LogSanitizer.sanitize(result.term()), result.count(), result.ids());
+                    LogSanitizer.sanitize(result.term()), result.count(), LogSanitizer.sanitizeCollection(result.ids()));
 
             for (String pubmedId : result.ids()) {
                 pubmedResultRepository.save(request.pipelineId(), pubmedId);
             }
         } catch (Exception e) {
             log.error("Error executing NCBI search for term=[{}]: {}",
-                    LogSanitizer.sanitize(request.term()), e.getMessage(), e);
+                    LogSanitizer.sanitize(request.term()), LogSanitizer.sanitize(e.getMessage()), e);
         } finally {
             reportSearchProgress(request);
         }

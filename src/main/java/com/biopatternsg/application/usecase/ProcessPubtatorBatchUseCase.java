@@ -52,7 +52,7 @@ public class ProcessPubtatorBatchUseCase implements ProcessPubtatorBatch {
     @Override
     public void execute(PubtatorSearchRequest request) {
         if (request == null || request.pipelineId() == null || request.pipelineId().isBlank()) {
-            log.warn("Ignoring invalid PubTator batch request: [{}]", request);
+            log.warn("Ignoring invalid PubTator batch request: [{}]", LogSanitizer.sanitize(request));
             return;
         }
 
@@ -77,7 +77,7 @@ public class ProcessPubtatorBatchUseCase implements ProcessPubtatorBatch {
         } catch (Exception e) {
             log.error("[{}/{}] Error processing PubTator batch for pipelineId=[{}]: {}",
                     request.batchIndex(), request.batchesTotal(),
-                    LogSanitizer.sanitize(request.pipelineId()), e.getMessage(), e);
+                    LogSanitizer.sanitize(request.pipelineId()), LogSanitizer.sanitize(e.getMessage()), e);
         } finally {
             reportBatchProgress(request);
         }
