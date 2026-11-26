@@ -18,6 +18,9 @@ package com.biopatternsg.domain.util;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LogSanitizerTest {
@@ -49,5 +52,16 @@ class LogSanitizerTest {
     void shouldSanitizeObjectCorrectly() {
         Integer number = 42;
         assertEquals("42", LogSanitizer.sanitize(number));
+    }
+
+    @Test
+    @DisplayName("sanitizeCollection should handle null, empty, and CRLF elements")
+    void shouldSanitizeCollection() {
+        assertEquals(List.of(), LogSanitizer.sanitizeCollection(null));
+        assertEquals(List.of(), LogSanitizer.sanitizeCollection(List.of()));
+        assertEquals(
+                List.of("TP53", "BRCA1_1", "null"),
+                LogSanitizer.sanitizeCollection(Arrays.asList("TP53", "BRCA1\n1", null))
+        );
     }
 }

@@ -15,6 +15,9 @@
  */
 package com.biopatternsg.domain.util;
 
+import java.util.Collection;
+import java.util.List;
+
 public final class LogSanitizer {
 
     private LogSanitizer() {
@@ -25,5 +28,14 @@ public final class LogSanitizer {
             return "null";
         }
         return String.valueOf(value).replace('\r', '_').replace('\n', '_');
+    }
+
+    public static List<String> sanitizeCollection(Collection<?> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .map(LogSanitizer::sanitize)
+                .toList();
     }
 }

@@ -160,10 +160,11 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     new UpdateOptions().upsert(true)
             );
             log.debug("KB object upserted for pipelineId=[{}], name=[{}]: synonyms={}, biotypes={}",
-                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), processedSynonyms, uniqueBiotypes);
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name),
+                    LogSanitizer.sanitizeCollection(processedSynonyms), LogSanitizer.sanitizeCollection(uniqueBiotypes));
         } catch (Exception e) {
             log.error("Error upserting KB object for [{}, {}]: {}",
-                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -180,7 +181,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     ));
         } catch (Exception e) {
             log.error("Error finding all KB object synonyms for pipelineId=[{}]: {}",
-                    LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -203,7 +204,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
 
             return new PaginatedResult<>(items, totalItems, totalPages, safePage, size);
         } catch (Exception e) {
-            log.error("Error finding paginated KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+            log.error("Error finding paginated KB objects for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -216,7 +218,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     .map(KbObjectMapper::collectionToModel)
                     .toList();
         } catch (Exception e) {
-            log.error("Error finding all KB objects for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+            log.error("Error finding all KB objects for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -239,7 +242,7 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
                     .map(KbObjectMapper::collectionToModel);
         } catch (Exception e) {
             log.error("Error finding KB object for pipelineId=[{}] and name=[{}]: {}",
-                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), e.getMessage(), e);
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -266,7 +269,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             mongoCollection().bulkWrite(writes, new BulkWriteOptions().ordered(false));
             log.info("Bulk updated roles for {} objects in pipelineId=[{}]", roles.size(), LogSanitizer.sanitize(pipelineId));
         } catch (Exception e) {
-            log.error("Error updating roles for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+            log.error("Error updating roles for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }
@@ -283,7 +287,8 @@ public class KbObjectRepositoryAdapter implements KbObjectRepository, PanacheMon
             );
             log.info("Reset roles for all objects in pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
         } catch (Exception e) {
-            log.error("Error resetting roles for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
+            log.error("Error resetting roles for pipelineId=[{}]: {}",
+                    LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(e.getMessage()), e);
             throw new InternalServerError(e);
         }
     }

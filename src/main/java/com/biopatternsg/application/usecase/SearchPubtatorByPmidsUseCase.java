@@ -20,6 +20,7 @@ import com.biopatternsg.domain.ports.in.SearchPubtatorByPmids;
 import com.biopatternsg.domain.ports.out.producers.PubtatorQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorSearchProgressRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -49,16 +50,17 @@ public class SearchPubtatorByPmidsUseCase implements SearchPubtatorByPmids {
 
     @Override
     public void execute(String pipelineId, String userId) {
-        log.info("Starting PubTator enqueuing for pipelineId=[{}]", pipelineId);
+        log.info("Starting PubTator enqueuing for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
 
         List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(pipelineId);
         List<String> allPmids = rawPmids.stream()
                 .filter(pmid -> pmid != null && pmid.trim().matches("\\d+"))
                 .toList();
-        log.info("Found [{}] unique PMIDs (raw: {}) for pipelineId=[{}]", allPmids.size(), rawPmids.size(), pipelineId);
+        log.info("Found [{}] unique PMIDs (raw: {}) for pipelineId=[{}]",
+                allPmids.size(), rawPmids.size(), LogSanitizer.sanitize(pipelineId));
 
         if (allPmids.isEmpty()) {
-            log.warn("No valid numeric PMIDs found for pipelineId=[{}], nothing to enqueue.", pipelineId);
+            log.warn("No valid numeric PMIDs found for pipelineId=[{}], nothing to enqueue.", LogSanitizer.sanitize(pipelineId));
             return;
         }
 
@@ -80,11 +82,11 @@ public class SearchPubtatorByPmidsUseCase implements SearchPubtatorByPmids {
                 );
             } catch (Exception e) {
                 log.error("[{}/{}] Error enqueuing PubTator batch: {}",
-                        i + 1, totalBatches, e.getMessage(), e);
+                        i + 1, totalBatches, LogSanitizer.sanitize(e.getMessage()), e);
             }
         }
 
-        log.info("PubTator enqueuing FINISHED for pipelineId=[{}]", pipelineId);
+        log.info("PubTator enqueuing FINISHED for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
     }
 
     private <T> List<List<T>> partitionList(List<T> list, int size) {

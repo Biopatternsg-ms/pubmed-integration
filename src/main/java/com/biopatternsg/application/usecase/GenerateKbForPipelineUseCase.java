@@ -127,7 +127,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
         try {
             PubtatorResult pubtatorResult = pubtatorResultRepository.findByPmid(pmid);
             if (pubtatorResult == null) {
-                log.warn("PubtatorResult not found in DB for PMID=[{}]", pmid);
+                log.warn("PubtatorResult not found in DB for PMID=[{}]", LogSanitizer.sanitize(pmid));
                 notFoundCount.incrementAndGet();
                 return;
             }
@@ -144,7 +144,7 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
 
             successCount.incrementAndGet();
         } catch (Exception e) {
-            log.error("Error generating KB for PMID=[{}]: {}", pmid, e.getMessage(), e);
+            log.error("Error generating KB for PMID=[{}]: {}", LogSanitizer.sanitize(pmid), LogSanitizer.sanitize(e.getMessage()), e);
             errorCount.incrementAndGet();
         }
     }
@@ -155,14 +155,14 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             PubtatorResult pubtatorResult
     ) {
         if (pubtatorResult.hasKnowledgeBase()) {
-            log.debug("KnowledgeBase already exists in pubtator_results for PMID=[{}]. Skipping build-knowledge-base call.", pmid);
+            log.debug("KnowledgeBase already exists in pubtator_results for PMID=[{}]. Skipping build-knowledge-base call.", LogSanitizer.sanitize(pmid));
             return pubtatorResult.knowledgeBase();
         }
 
-        log.debug("Sending PMID=[{}] to build-knowledge-base endpoint", pmid);
+        log.debug("Sending PMID=[{}] to build-knowledge-base endpoint", LogSanitizer.sanitize(pmid));
         GenerateKbResult kbResult = buildKnowledgeBaseRepoWeb.generateKnowledgeBase(pipelineId, pubtatorResult);
         log.info("KB response received for PMID=[{}]: events=[{}], synonyms=[{}], biotypes=[{}].",
-                pmid,
+                LogSanitizer.sanitize(pmid),
                 kbResult.events() != null ? kbResult.events().size() : 0,
                 kbResult.synonyms() != null ? kbResult.synonyms().size() : 0,
                 kbResult.biotypes() != null ? kbResult.biotypes().size() : 0);
@@ -189,7 +189,12 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
                         pubmedIds
                 ));
             } catch (Exception e) {
-                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}", LogSanitizer.sanitize(pipelineId), kbEvent.first(), kbEvent.relation(), kbEvent.second(), e.getMessage(), e);
+                log.error("Error persisting KbEvent [{}, [{},{},{}]]: {}",
+                        LogSanitizer.sanitize(pipelineId),
+                        LogSanitizer.sanitize(kbEvent.first()),
+                        LogSanitizer.sanitize(kbEvent.relation()),
+                        LogSanitizer.sanitize(kbEvent.second()),
+                        LogSanitizer.sanitize(e.getMessage()), e);
             }
         }
     }

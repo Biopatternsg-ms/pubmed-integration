@@ -22,6 +22,7 @@ import com.biopatternsg.domain.ports.in.SearchPubmedByPairs;
 import com.biopatternsg.domain.ports.out.producers.NcbiQueueSender;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
 import com.biopatternsg.domain.ports.out.repositories.SearchProgressRepository;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
 
     @Override
     public void execute(String pipelineId, int retmax, String userId) {
-        log.info("Starting NCBI ESearch enqueuing for pipelineId=[{}] retmax=[{}]", pipelineId, retmax);
+        log.info("Starting NCBI ESearch enqueuing for pipelineId=[{}] retmax=[{}]", LogSanitizer.sanitize(pipelineId), retmax);
 
         List<PipelinePairsBatch> batches = pairRepository.findByPipelineId(pipelineId);
 
@@ -50,7 +51,7 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
                 .filter(Objects::nonNull)
                 .toList();
 
-        log.info("Found [{}] pairs for pipelineId=[{}]", allPairs.size(), pipelineId);
+        log.info("Found [{}] pairs for pipelineId=[{}]", allPairs.size(), LogSanitizer.sanitize(pipelineId));
 
         List<String> terms = allPairs.stream()
                 .map(pair -> pair.firstTerm() + " AND " + pair.secondTerm())
@@ -66,10 +67,11 @@ public class SearchPubmedByPairsUseCase implements SearchPubmedByPairs {
             try {
                 ncbiQueueSender.send(new NcbiSearchRequest(pipelineId, term, retmax, i + 1, terms.size(), userId));
             } catch (Exception e) {
-                log.error("[{}/{}] Error enqueuing NCBI request for term=[{}]: {}", i + 1, allPairs.size(), term, e.getMessage());
+                log.error("[{}/{}] Error enqueuing NCBI request for term=[{}]: {}",
+                        i + 1, allPairs.size(), LogSanitizer.sanitize(term), LogSanitizer.sanitize(e.getMessage()));
             }
         }
 
-        log.info("NCBI ESearch enqueuing FINISHED for pipelineId=[{}]", pipelineId);
+        log.info("NCBI ESearch enqueuing FINISHED for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
     }
 }

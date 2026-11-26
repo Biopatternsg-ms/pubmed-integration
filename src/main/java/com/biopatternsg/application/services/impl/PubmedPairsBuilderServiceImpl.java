@@ -20,6 +20,7 @@ import com.biopatternsg.application.services.PubmedPairsBuilderService;
 import com.biopatternsg.domain.model.BiologicalObject;
 import com.biopatternsg.domain.model.Pair;
 import com.biopatternsg.domain.model.TermPair;
+import com.biopatternsg.domain.util.LogSanitizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -92,7 +93,7 @@ public class PubmedPairsBuilderServiceImpl implements PubmedPairsBuilderService 
                         useOnlyPrincipalName, currentBiologicalObject, biologicalObject).stream())
                 .collect(Collectors.toSet());
 
-        log.info("---- LEVEL [{}] biologicalObject [{}]: {} pairs", level, currentBiologicalObject.id(), uniquePairs.size());
+        log.info("---- LEVEL [{}] biologicalObject [{}]: {} pairs", level, LogSanitizer.sanitize(currentBiologicalObject.id()), uniquePairs.size());
         return uniquePairs;
     }
 
