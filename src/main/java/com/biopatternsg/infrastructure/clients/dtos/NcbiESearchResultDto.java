@@ -17,8 +17,6 @@ package com.biopatternsg.infrastructure.clients.dtos;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
@@ -26,13 +24,9 @@ import java.util.List;
  * DTO interno del objeto "esearchresult" del JSON de NCBI ESearch.
  * El campo "count" viene como String en la API de NCBI.
  */
-@Getter
-@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NcbiESearchResultDto {
-
-    private String count;
-
-    @JsonProperty("idlist")
-    private List<String> idList;
+public record NcbiESearchResultDto(
+        String count,
+        @JsonProperty("idlist") List<String> idList
+) {
 }

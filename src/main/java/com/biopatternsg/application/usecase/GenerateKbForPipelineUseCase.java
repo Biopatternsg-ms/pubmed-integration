@@ -93,34 +93,8 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             AtomicInteger notFoundCount = new AtomicInteger();
             AtomicInteger errorCount    = new AtomicInteger();
 
-            allPmids.parallelStream().forEach(pmid -> {
-                try {
-                    PubtatorResult pubtatorResult = pubtatorResultRepository.findByPmid(pmid);
-                    if (pubtatorResult == null) {
-                        log.warn("PubtatorResult not found in DB for PMID=[{}]", pmid);
-                        notFoundCount.incrementAndGet();
-                        return; // equivale a continue en el for secuencial
-                    }
-
-                    PubtatorResult.KnowledgeBase knowledgeBase = resolveKnowledgeBase(pipelineId, pmid, pubtatorResult);
-
-                    // 4. Persistir cada evento en MongoDB (kb_events)
-                    if (knowledgeBase.event() != null && !knowledgeBase.event().isEmpty()) {
-                        persistKbEvents(pipelineId, pmid, knowledgeBase.event());
-                    }
-
-                    // 5. Persistir los objetos de la KB (synonyms + biotypes) en MongoDB (kb_objects)
-                    if (knowledgeBase.objects() != null && !knowledgeBase.objects().isEmpty()) {
-                        kbObjectRepository.saveKbObjectItems(pipelineId, knowledgeBase.objects());
-                    }
-
-                    successCount.incrementAndGet();
-
-                } catch (Exception e) {
-                    log.error("Error generating KB for PMID=[{}]: {}", pmid, e.getMessage(), e);
-                    errorCount.incrementAndGet();
-                }
-            });
+            allPmids.parallelStream().forEach(pmid ->
+                    processPmid(pipelineId, pmid, successCount, notFoundCount, errorCount));
 
             log.info("Finished knowledge base generation pipeline for pipelineId=[{}]. Results: Success=[{}], NotFound=[{}], Errors=[{}]",
                     LogSanitizer.sanitize(pipelineId), successCount.get(), notFoundCount.get(), errorCount.get());
@@ -140,6 +114,38 @@ public class GenerateKbForPipelineUseCase implements GenerateKbForPipeline {
             log.error("Fatal error during KB generation for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId), e);
             configAndControlRepository.updateStep(PipelineStepUpdate.of(
                     pipelineId, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, userId));
+        }
+    }
+
+    private void processPmid(
+            String pipelineId,
+            String pmid,
+            AtomicInteger successCount,
+            AtomicInteger notFoundCount,
+            AtomicInteger errorCount
+    ) {
+        try {
+            PubtatorResult pubtatorResult = pubtatorResultRepository.findByPmid(pmid);
+            if (pubtatorResult == null) {
+                log.warn("PubtatorResult not found in DB for PMID=[{}]", pmid);
+                notFoundCount.incrementAndGet();
+                return;
+            }
+
+            PubtatorResult.KnowledgeBase knowledgeBase = resolveKnowledgeBase(pipelineId, pmid, pubtatorResult);
+
+            if (knowledgeBase.event() != null && !knowledgeBase.event().isEmpty()) {
+                persistKbEvents(pipelineId, pmid, knowledgeBase.event());
+            }
+
+            if (knowledgeBase.objects() != null && !knowledgeBase.objects().isEmpty()) {
+                kbObjectRepository.saveKbObjectItems(pipelineId, knowledgeBase.objects());
+            }
+
+            successCount.incrementAndGet();
+        } catch (Exception e) {
+            log.error("Error generating KB for PMID=[{}]: {}", pmid, e.getMessage(), e);
+            errorCount.incrementAndGet();
         }
     }
 

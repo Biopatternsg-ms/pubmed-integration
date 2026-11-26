@@ -15,9 +15,9 @@
  */
 package com.biopatternsg.infrastructure.adapters.in.consumers;
 
+import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.infrastructure.adapters.dtos.pubtator.PubtatorApiResponse;
 import com.biopatternsg.infrastructure.mapper.PubtatorResultMapper;
-import com.biopatternsg.domain.model.PubtatorResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,6 @@ import java.util.List;
 public class PubtatorResponseParser {
 
     private final ObjectMapper objectMapper;
-    private final PubtatorResultMapper mapper;
 
     public List<PubtatorResult> parse(String responseJson) throws IOException {
         if (responseJson == null || responseJson.isBlank()) {
@@ -45,7 +44,7 @@ public class PubtatorResponseParser {
         }
 
         return response.pubTator3().stream()
-                .map(mapper::toDomain)
+                .map(PubtatorResultMapper::pubtatorToModel)
                 .toList();
     }
 }

@@ -15,20 +15,16 @@
  */
 package com.biopatternsg.infrastructure.adapters.out.external_repositories;
 
-import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb;
 import com.biopatternsg.domain.ports.out.external_repositories.GenerateKbResult;
 import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.GenerateKbResponse;
 import com.biopatternsg.infrastructure.clients.dtos.buildknowledgebase.PubTatorDocumentRequest;
 import com.biopatternsg.infrastructure.clients.internal.BuildKnowledgeBaseHttpClient;
+import com.biopatternsg.infrastructure.mapper.BuildKnowledgeBaseMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
@@ -42,40 +38,8 @@ public class BuildKnowledgeBaseAdapter implements BuildKnowledgeBaseRepoWeb {
 
     @Override
     public GenerateKbResult generateKnowledgeBase(String pipelineId, PubtatorResult pubtatorResult) {
-
-        PubTatorDocumentRequest request = new PubTatorDocumentRequest(
-                pipelineId,
-                pubtatorResult.pmid(),
-                pubtatorResult.title(),
-                pubtatorResult.text(),
-                pubtatorResult.objects(),
-                pubtatorResult.events()
-        );
-
+        PubTatorDocumentRequest request = BuildKnowledgeBaseMapper.modelToDocumentRequest(pipelineId, pubtatorResult);
         GenerateKbResponse response = httpClient.generateKb(request);
-
-        if (response == null) {
-            return new GenerateKbResult(Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
-        }
-
-        List<KbEvent> domainEvents = Collections.emptyList();
-        if (response.events() != null) {
-            domainEvents = response.events().stream()
-                    .filter(infraEvent -> infraEvent.event() != null)
-                    .map(infraEvent -> new KbEvent(
-                            pipelineId,
-                            infraEvent.event().first(),
-                            infraEvent.event().relation(),
-                            infraEvent.event().second(),
-                            infraEvent.pubmedIds()
-                    ))
-                    .collect(Collectors.toList());
-        }
-
-        return new GenerateKbResult(
-                domainEvents,
-                response.synonyms() != null ? response.synonyms() : Collections.emptyMap(),
-                response.biotypes() != null ? response.biotypes() : Collections.emptyMap()
-        );
+        return BuildKnowledgeBaseMapper.buildKbToModel(pipelineId, response);
     }
 }

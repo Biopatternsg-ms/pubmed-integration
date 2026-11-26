@@ -17,13 +17,9 @@ package com.biopatternsg.infrastructure.clients.dtos;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NcbiESearchResponse {
-    @JsonProperty("esearchresult")
-    private NcbiESearchResultDto eSearchResult;
+public record NcbiESearchResponse(
+        @JsonProperty("esearchresult") NcbiESearchResultDto eSearchResult
+) {
 }

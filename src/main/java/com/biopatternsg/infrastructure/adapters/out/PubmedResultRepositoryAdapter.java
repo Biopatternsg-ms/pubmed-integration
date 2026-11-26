@@ -20,9 +20,7 @@ import com.biopatternsg.infrastructure.mongo.PubmedResultCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @ApplicationScoped
 public class PubmedResultRepositoryAdapter implements PubmedResultRepository, PanacheMongoRepository<PubmedResultCollection> {
 

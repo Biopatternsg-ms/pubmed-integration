@@ -15,22 +15,18 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.domain.model.AlignedAs;
 import com.biopatternsg.domain.model.AlignedResult;
 import com.biopatternsg.domain.model.AlignedResultSummary;
 import com.biopatternsg.domain.ports.out.repositories.AlignedResultRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
+import com.biopatternsg.infrastructure.mapper.AlignedResultMapper;
 import com.biopatternsg.infrastructure.mongo.AlignedResultCollection;
-import com.biopatternsg.infrastructure.mongo.AlignedAsEmbedded;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
@@ -43,23 +39,9 @@ public class AlignedResultRepositoryAdapter implements AlignedResultRepository, 
         }
 
         try {
-            AlignedResultCollection entity = find("pipelineId", alignedResult.pipelineId()).firstResult();
-            boolean isNew = false;
-            if (entity == null) {
-                entity = new AlignedResultCollection();
-                entity.setPipelineId(alignedResult.pipelineId());
-                isNew = true;
-            }
-
-            entity.setAligned(alignedResult.aligned());
-            entity.setNoAligned(alignedResult.noAligned());
-
-            List<AlignedAsEmbedded> embeddedList = alignedResult.alignedAs().stream()
-                    .map(a -> new AlignedAsEmbedded(a.expertObjectName(), a.alternativeIds()))
-                    .collect(Collectors.toList());
-            entity.setAlignedAs(embeddedList);
-
-            entity.setAlignedAndAlternatives(alignedResult.alignedAndAlternatives());
+            AlignedResultCollection existing = find("pipelineId", alignedResult.pipelineId()).firstResult();
+            boolean isNew = existing == null;
+            AlignedResultCollection entity = AlignedResultMapper.modelToCollection(alignedResult, existing);
 
             if (isNew) {
                 persist(entity);
@@ -81,26 +63,7 @@ public class AlignedResultRepositoryAdapter implements AlignedResultRepository, 
 
         try {
             AlignedResultCollection entity = find("pipelineId", pipelineId).firstResult();
-            if (entity == null) {
-                return Optional.empty();
-            }
-
-            List<AlignedAs> alignedAsList = entity.getAlignedAs() == null ? Collections.emptyList() :
-                    entity.getAlignedAs().stream()
-                            .map(a -> new AlignedAs(a.getExpertObjectName(), a.getAlternativeIds()))
-                            .collect(Collectors.toList());
-
-            List<String> aligned = entity.getAligned() != null ? entity.getAligned() : Collections.emptyList();
-            List<String> noAligned = entity.getNoAligned() != null ? entity.getNoAligned() : Collections.emptyList();
-
-            AlignedResultSummary summary = new AlignedResultSummary(
-                    entity.getPipelineId(),
-                    aligned,
-                    noAligned,
-                    alignedAsList
-            );
-
-            return Optional.of(summary);
+            return Optional.ofNullable(AlignedResultMapper.collectionToSummary(entity));
         } catch (Exception e) {
             log.error("Error fetching AlignedResult for pipelineId=[{}]: {}", LogSanitizer.sanitize(pipelineId), e.getMessage(), e);
             throw new InternalServerError(e);

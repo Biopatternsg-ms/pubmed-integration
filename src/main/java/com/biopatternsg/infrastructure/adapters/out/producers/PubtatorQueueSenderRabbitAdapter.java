@@ -19,7 +19,6 @@ import com.biopatternsg.domain.model.PubtatorSearchRequest;
 import com.biopatternsg.domain.ports.out.producers.PubtatorQueueSender;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -29,10 +28,12 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 @ApplicationScoped
 public class PubtatorQueueSenderRabbitAdapter implements PubtatorQueueSender {
 
-    @Inject
-    @Channel("pubtator-out")
-    @OnOverflow(OnOverflow.Strategy.UNBOUNDED_BUFFER)
-    Emitter<PubtatorSearchRequest> emitter;
+    private final Emitter<PubtatorSearchRequest> emitter;
+
+    public PubtatorQueueSenderRabbitAdapter(
+            @Channel("pubtator-out") @OnOverflow(OnOverflow.Strategy.UNBOUNDED_BUFFER) Emitter<PubtatorSearchRequest> emitter) {
+        this.emitter = emitter;
+    }
 
     @Override
     public void send(PubtatorSearchRequest request) {
