@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,16 +50,19 @@ class AppLifecycleBeanTest {
     }
 
     @Test
-    @DisplayName("onStart should invoke resumePipelines with PUBMED_INTEGRATION successfully")
+    @DisplayName("onStart should invoke resumePipelines with PUBMED_INTEGRATION and close Response")
     void testOnStartSuccess() {
+        Response mockResponse = mock(Response.class);
+        when(mockResponse.getStatus()).thenReturn(200);
         when(configAndControlHttpClient.resumePipelines(any(ResumePipelineRequest.class)))
-                .thenReturn(Response.ok().build());
+                .thenReturn(mockResponse);
 
         StartupEvent event = new StartupEvent();
         assertDoesNotThrow(() -> appLifecycleBean.onStart(event));
 
         ArgumentCaptor<ResumePipelineRequest> captor = ArgumentCaptor.forClass(ResumePipelineRequest.class);
         verify(configAndControlHttpClient, times(1)).resumePipelines(captor.capture());
+        verify(mockResponse, times(1)).close();
         assertEquals("PUBMED_INTEGRATION", captor.getValue().microService());
     }
 

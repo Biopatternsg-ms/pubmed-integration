@@ -21,17 +21,18 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.logging.Logger;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @ApplicationScoped
 public class AppLifecycleBean {
 
-    private static final Logger LOG = Logger.getLogger(AppLifecycleBean.class);
     private static final long DEFAULT_DELAY_SECONDS = 10;
 
     private final ConfigAndControlHttpClient configAndControlHttpClient;
@@ -48,13 +49,14 @@ public class AppLifecycleBean {
     }
 
     void onStart(@Observes StartupEvent ev) {
-        LOG.info("Application starting: scheduling autonomous pipeline resumption for PUBMED_INTEGRATION in 5 seconds");
+        log.info("Application starting: scheduling autonomous pipeline resumption for PUBMED_INTEGRATION in {} seconds",
+                DEFAULT_DELAY_SECONDS);
         CompletableFuture.runAsync(() -> {
-            try {
-                configAndControlHttpClient.resumePipelines(new ResumePipelineRequest("PUBMED_INTEGRATION"));
-                LOG.info("Pipeline resumption request for PUBMED_INTEGRATION dispatched successfully");
+            try (Response response = configAndControlHttpClient.resumePipelines(new ResumePipelineRequest("PUBMED_INTEGRATION"))) {
+                int status = response != null ? response.getStatus() : -1;
+                log.info("Pipeline resumption request for PUBMED_INTEGRATION dispatched with status [{}]", status);
             } catch (Exception e) {
-                LOG.error("Failed to resume pipelines on application startup for PUBMED_INTEGRATION", e);
+                log.error("Failed to resume pipelines on application startup for PUBMED_INTEGRATION", e);
             }
         }, executor);
     }

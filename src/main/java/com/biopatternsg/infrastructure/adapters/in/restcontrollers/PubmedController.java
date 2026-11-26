@@ -41,6 +41,8 @@ import com.biopatternsg.infrastructure.adapters.dtos.KbEventsByRestrictionReques
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
@@ -88,16 +90,11 @@ public class PubmedController {
     @POST
     @Path("/build-pairs")
     @ActivateRequestContext
-    public Response buildTreeMesh(@Valid BuildPairsRequest buildPairsRequest) {
+    public Response buildPubmedPairs(@Valid BuildPairsRequest buildPairsRequest) {
 
         String userId = sessionUtils.getUserId();
-        CompletableFuture.runAsync(() -> {
-            try {
-                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId);
-            } catch (Exception e) {
-                log.error("Error building pubmed pairs", e);
-            }
-        }, executor);
+        runAsyncTask("building pubmed pairs", () ->
+                buildPubmedPairs.execute(buildPairsRequest.pipelineId(), buildPairsRequest.useOnlyPrincipalName(), buildPairsRequest.levels(), userId));
 
         return Response.accepted()
                 .entity(Map.of("message", "Building pubmed pairs"))
@@ -112,13 +109,8 @@ public class PubmedController {
     ) {
 
         String userId = sessionUtils.getUserId();
-        CompletableFuture.runAsync(() -> {
-            try {
-                searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId);
-            } catch (Exception e) {
-                log.error("Error searching pubmed pairs", e);
-            }
-        }, executor);
+        runAsyncTask("searching pubmed pairs", () ->
+                searchPubmedByPairs.execute(request.pipelineId(), request.retmax(), userId));
 
         return Response.accepted()
                 .entity(Map.of("message", "Searching pubmed IDS by pairs"))
@@ -133,13 +125,8 @@ public class PubmedController {
     ) {
 
         String userId = sessionUtils.getUserId();
-        CompletableFuture.runAsync(() -> {
-            try {
-                searchPubtatorByPmids.execute(request.pipelineId(), userId);
-            } catch (Exception e) {
-                log.error("Error searching PubTator by pmids", e);
-            }
-        }, executor);
+        runAsyncTask("searching PubTator by pmids", () ->
+                searchPubtatorByPmids.execute(request.pipelineId(), userId));
 
         return Response.accepted()
                 .entity(Map.of("message", "Searching PubTator by pmids"))
@@ -154,13 +141,8 @@ public class PubmedController {
     ) {
 
         String userId = sessionUtils.getUserId();
-        CompletableFuture.runAsync(() -> {
-            try {
-                generateKbForPipeline.execute(request.pipelineId(), userId);
-            } catch (Exception e) {
-                log.error("Error generating KB for pipeline", e);
-            }
-        }, executor);
+        runAsyncTask("generating KB for pipeline", () ->
+                generateKbForPipeline.execute(request.pipelineId(), userId));
 
         return Response.accepted()
                 .entity(Map.of("message", "Knowledge base generation pipeline started"))
@@ -176,13 +158,8 @@ public class PubmedController {
 
         String userId = sessionUtils.getUserId();
         List<ExpertObjectConfig> expertObjects = ExpertObjectConfigMapper.requestListToModel(request.expertObjects());
-        CompletableFuture.runAsync(() -> {
-            try {
-                generateAlignedObjects.execute(request.pipelineId(), expertObjects, userId);
-            } catch (Exception e) {
-                log.error("Error generating aligned objects", e);
-            }
-        }, executor);
+        runAsyncTask("generating aligned objects", () ->
+                generateAlignedObjects.execute(request.pipelineId(), expertObjects, userId));
 
         return Response.accepted()
                 .entity(Map.of("message", "Aligned objects generation started"))
@@ -205,16 +182,11 @@ public class PubmedController {
     @GET
     @Path("/kb-objects/{pipelineId}/by-name/{name}")
     public Response getKbObjectByName(
-            @PathParam("pipelineId") String pipelineId,
-            @PathParam("name") String name
+            @PathParam("pipelineId") @NotBlank String pipelineId,
+            @PathParam("name") @NotBlank String name
     ) {
         log.info("Request to get kb_object for pipelineId=[{}], name=[{}]",
                 LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(name));
-        if (name == null || name.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'name' is required"))
-                    .build();
-        }
         return getKbObjectByName.execute(pipelineId, name)
                 .map(result -> Response.ok(result).build())
                 .orElseGet(() -> Response.status(Response.Status.NOT_FOUND)
@@ -233,11 +205,11 @@ public class PubmedController {
     @PATCH
     @Path("/kb-objects/{pipelineId}/roles")
     public Response updateKbObjectRoles(
-            @PathParam("pipelineId") String pipelineId,
-            Map<String, List<String>> rolesMap
+            @PathParam("pipelineId") @NotBlank String pipelineId,
+            @NotNull Map<String, List<String>> rolesMap
     ) {
         log.info("Request to update kb_object roles for pipelineId=[{}], count=[{}]",
-                LogSanitizer.sanitize(pipelineId), rolesMap != null ? rolesMap.size() : 0);
+                LogSanitizer.sanitize(pipelineId), rolesMap.size());
         updateKbObjectRoles.execute(pipelineId, rolesMap);
         return Response.ok(Map.of("message", "Roles updated successfully in kb_objects")).build();
     }
@@ -272,16 +244,11 @@ public class PubmedController {
     @GET
     @Path("/kb-events/{pipelineId}/by-term/{term}")
     public Response getKbEventsByTerm(
-            @PathParam("pipelineId") String pipelineId,
-            @PathParam("term") String term
+            @PathParam("pipelineId") @NotBlank String pipelineId,
+            @PathParam("term") @NotBlank String term
     ) {
         log.info("Request to get kb_events for pipelineId=[{}], term=[{}]",
                 LogSanitizer.sanitize(pipelineId), LogSanitizer.sanitize(term));
-        if (term == null || term.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'term' is required"))
-                    .build();
-        }
         var events = getKbEventsByTerm.execute(pipelineId, term);
         return Response.ok(events).build();
     }
@@ -289,14 +256,9 @@ public class PubmedController {
     @GET
     @Path("/kb-events/{pipelineId}")
     public Response getKbEventsByPipeline(
-            @PathParam("pipelineId") String pipelineId
+            @PathParam("pipelineId") @NotBlank String pipelineId
     ) {
         log.info("Request to get all kb_events for pipelineId=[{}]", LogSanitizer.sanitize(pipelineId));
-        if (pipelineId == null || pipelineId.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
-                    .build();
-        }
         var events = getKbEventsByPipeline.execute(pipelineId);
         return Response.ok(events).build();
     }
@@ -304,17 +266,12 @@ public class PubmedController {
     @POST
     @Path("/kb-events/{pipelineId}/by-restriction")
     public Response getKbEventsByRestriction(
-            @PathParam("pipelineId") String pipelineId,
-            KbEventsByRestrictionRequest request
+            @PathParam("pipelineId") @NotBlank String pipelineId,
+            @Valid KbEventsByRestrictionRequest request
     ) {
         log.info("Request to get kb_events by restriction for pipelineId=[{}], restrictionLevel=[{}]",
                 LogSanitizer.sanitize(pipelineId),
                 request != null ? LogSanitizer.sanitize(request.restrictionLevel()) : "null");
-        if (pipelineId == null || pipelineId.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("message", "Path parameter 'pipelineId' is required"))
-                    .build();
-        }
         String level = request != null ? request.restrictionLevel() : null;
         List<String> objects = request != null ? request.alignedObjects() : null;
         var events = getKbEventsByRestriction.execute(pipelineId, level, objects);
@@ -338,6 +295,16 @@ public class PubmedController {
         log.info("Request to get publications for {} PMIDs", request.pmids() != null ? request.pmids().size() : 0);
         var publications = getPublicationsByPmids.execute(request.pmids());
         return Response.ok(publications).build();
+    }
+
+    private void runAsyncTask(String taskName, Runnable action) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                action.run();
+            } catch (Exception e) {
+                log.error("Error {}", taskName, e);
+            }
+        }, executor);
     }
 
 }

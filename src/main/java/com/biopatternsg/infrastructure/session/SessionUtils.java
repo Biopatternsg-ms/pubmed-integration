@@ -20,6 +20,8 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Setter
 @Getter
 @RequestScoped
@@ -27,8 +29,16 @@ public class SessionUtils {
 
     private MultivaluedMap<String, String> context;
 
-    public String getUserId(){
-        return this.context.get("x-user-id").getFirst();
+    public String getUserId() {
+        if (this.context == null) {
+            return null;
+        }
+        List<String> values = this.context.get("x-user-id");
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        String userId = values.getFirst();
+        return (userId == null || userId.isBlank()) ? null : userId;
     }
 
 }
