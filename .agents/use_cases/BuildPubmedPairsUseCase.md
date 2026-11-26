@@ -5,63 +5,49 @@ Before querying PubMed for scientific literature supporting a BioPatternsG pipel
 
 ## 2. Contracts
 - **Inbound Port:** `com.biopatternsg.domain.ports.in.BuildPubmedPairs`
-  - `void execute(String pipelineId, boolean useOnlyPrincipalName, int levels, String userId)`
+  - `void execute(BuildPubmedPairsCommand command)`
 - **Outbound Ports:**
   - `com.biopatternsg.domain.ports.out.repositories.PairRepository`
     - `void deleteByPipelineId(String pipelineId)`
-    - `void save(PairsCollection pairsCollection)`
-    - `List<PairsCollection> findByPipelineId(String pipelineId)`
+    - `void save(PipelinePairsBatch batch)`
+    - `List<PipelinePairsBatch> findByPipelineId(String pipelineId)`
   - `com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository`
-    - `void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics)`
+    - `void updateStep(PipelineStepUpdate update)`
 - **Application Services:**
-  - `com.biopatternsg.application.services.BiologicalObjectsService`
-    - `List<BiologicalObject> getBiologicalObjectsByLevel(String pipelineId, int level)`
-    - `List<BiologicalObject> getBiologicalObjectFatherBrothersAndSons(String pipelineId, String biologicalObjectId)`
-- **Configuration Properties:**
-  - `pubmed.max-synonyms-per-object` (default `10`): Maximum number of synonyms considered per biological object when `useOnlyPrincipalName` is `false`.
-- **Delivery Adapter:** `PubmedController#buildTreeMesh` (`POST /pubmed/build-pairs`, executed asynchronously via `CompletableFuture.runAsync(...)` with `202 Accepted`; captures `userId` from `SessionUtils` prior to async dispatch).
+  - `com.biopatternsg.application.services.PubmedPairsBuilderService`
+    - `Set<TermPair> buildFirstLevelPairs(String pipelineId, boolean useOnlyPrincipalName)`
+    - `List<Set<TermPair>> buildHigherLevelPairBatches(String pipelineId, boolean useOnlyPrincipalName, int level)`
+- **Delivery Adapter:** `PubmedController#buildPubmedPairs` (`POST /pubmed/build-pairs`, executed asynchronously via `CompletableFuture.runAsync(...)` with `202 Accepted`; captures `userId` from `SessionUtils` prior to async dispatch and constructs `BuildPubmedPairsCommand`).
 
 ## 3. Execution Flow
-1. Delete any previously persisted pair documents for `pipelineId` via `pairRepository.deleteByPipelineId(pipelineId)`.
-2. Process **Level 1**:
-   1. Fetch all level-1 `BiologicalObject` entries via `biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, 1)`.
-   2. Form all unique unordered pairs of level-1 object IDs.
-   3. For each object pair, extract terms (either `name` + `symbol` if `useOnlyPrincipalName` is `true`, or `obj.allTerms(maxSynonyms)` otherwise) and build all unique `PairsGenerator.TermsPair` combinations where `termA` differs case-insensitively from `termB`.
-   4. Persist the level-1 `PairsCollection` via `pairRepository.save(...)`.
-3. For each higher level from `2` up to `levels`:
-   1. Fetch all objects at `currentLevel` via `biologicalObjectsService.getBiologicalObjectsByLevel(pipelineId, currentLevel)`.
-   2. Process objects in parallel: for each object, fetch its family (`father`, `brothers`, `sons`) via `biologicalObjectsService.getBiologicalObjectFatherBrothersAndSons(pipelineId, obj.id())`, build unique term pairs against every distinct family member, and persist a `PairsCollection` document.
-4. Query all saved `PairsCollection` documents for `pipelineId` and sum the total number of generated pairs (`combinationsGenerated`).
-5. Notify `config-and-control` with `PipelineSteps.COMBINATIONS`, `Status.COMPLETED`, `userId`, and the `combinationsGenerated` metric.
+1. Delete any previously persisted pair documents for `command.pipelineId()` via `pairRepository.deleteByPipelineId(pipelineId)`.
+2. Delegate **Level 1** pair construction to `pubmedPairsBuilderService.buildFirstLevelPairs(pipelineId, command.useShortName())` and persist via `pairRepository.save(...)`.
+3. For each higher level from `2` up to `command.levels()`, delegate family pair construction to `pubmedPairsBuilderService.buildHigherLevelPairBatches(pipelineId, command.useShortName(), currentLevel)` (which collects pairs thread-safely via `.flatMap(...).collect(Collectors.toSet())` inside `parallelStream()`) and persist each batch via `pairRepository.save(...)`.
+4. Query all saved `PipelinePairsBatch` documents for `pipelineId` and sum the total number of generated pairs (`combinationsGenerated`).
+5. Notify `config-and-control` via `configAndControlRepository.updateStep(PipelineStepUpdate.withMetrics(pipelineId, PipelineSteps.COMBINATIONS, Status.COMPLETED, command.userId(), metrics))`.
 
 ## 4. Sequence Diagram
 ```mermaid
 sequenceDiagram
     participant C as PubmedController
     participant UC as BuildPubmedPairsUseCase
-    participant S as BiologicalObjectsService
+    participant PBS as PubmedPairsBuilderService
     participant PR as PairRepository
     participant CC as ConfigAndControlRepository
 
-    C->>UC: execute(pipelineId, useOnlyPrincipalName, levels, userId) [async]
+    C->>UC: execute(BuildPubmedPairsCommand) [async]
     UC->>PR: deleteByPipelineId(pipelineId)
-    UC->>S: getBiologicalObjectsByLevel(pipelineId, 1)
-    S-->>UC: List<BiologicalObject> (level 1)
-    UC->>UC: Build unique level-1 term pairs
-    UC->>PR: save(level1PairsCollection)
+    UC->>PBS: buildFirstLevelPairs(pipelineId, useShortName)
+    PBS-->>UC: Set<TermPair>
+    UC->>PR: save(PipelinePairsBatch)
     loop currentLevel = 2..levels
-        UC->>S: getBiologicalObjectsByLevel(pipelineId, currentLevel)
-        S-->>UC: List<BiologicalObject>
-        loop parallel per biologicalObject
-            UC->>S: getBiologicalObjectFatherBrothersAndSons(pipelineId, obj.id)
-            S-->>UC: List<BiologicalObject> (family)
-            UC->>UC: Build unique term pairs against family
-            UC->>PR: save(objectPairsCollection)
-        end
+        UC->>PBS: buildHigherLevelPairBatches(pipelineId, useShortName, currentLevel)
+        PBS-->>UC: List<Set<TermPair>>
+        UC->>PR: save(PipelinePairsBatch)
     end
     UC->>PR: findByPipelineId(pipelineId)
-    PR-->>UC: List<PairsCollection>
-    UC->>CC: updateStep(pipelineId, COMBINATIONS, COMPLETED, userId, metrics)
+    PR-->>UC: List<PipelinePairsBatch>
+    UC->>CC: updateStep(PipelineStepUpdate.withMetrics(...))
 ```
 
 ## 5. Exceptions, Caching, and Failure Scenarios

@@ -16,6 +16,7 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.KbEvent;
+import com.biopatternsg.domain.model.RestrictionLevel;
 import com.biopatternsg.domain.ports.in.GetKbEventsByRestriction;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
@@ -24,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @ApplicationScoped
@@ -46,6 +49,33 @@ public class GetKbEventsByRestrictionUseCase implements GetKbEventsByRestriction
             return Collections.emptyList();
         }
 
-        return kbEventRepository.findByPipelineIdAndRestriction(pipelineId, restrictionLevel, alignedObjects);
+        List<KbEvent> allEvents = kbEventRepository.findByPipelineId(pipelineId);
+        if (allEvents.isEmpty()) {
+            return List.of();
+        }
+
+        RestrictionLevel level = RestrictionLevel.fromString(restrictionLevel);
+        if (level == RestrictionLevel.UNRESTRICTED) {
+            return allEvents;
+        }
+
+        Set<String> alignedSet = normalizeAlignedObjects(alignedObjects);
+        if (alignedSet.isEmpty()) {
+            return List.of();
+        }
+
+        return allEvents.stream()
+                .filter(event -> level.matches(event, alignedSet))
+                .toList();
+    }
+
+    private Set<String> normalizeAlignedObjects(List<String> alignedObjects) {
+        if (alignedObjects == null || alignedObjects.isEmpty()) {
+            return Set.of();
+        }
+        return alignedObjects.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.trim().toUpperCase())
+                .collect(Collectors.toSet());
     }
 }

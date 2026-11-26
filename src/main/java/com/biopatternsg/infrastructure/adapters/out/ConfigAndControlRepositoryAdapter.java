@@ -15,14 +15,11 @@
  */
 package com.biopatternsg.infrastructure.adapters.out;
 
-import com.biopatternsg.domain.model.PipelineSteps;
-import com.biopatternsg.domain.model.Status;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.infrastructure.internal_services.QueryConfigAndControl;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -31,12 +28,7 @@ public class ConfigAndControlRepositoryAdapter implements ConfigAndControlReposi
     private final QueryConfigAndControl configAndControlService;
 
     @Override
-    public void updateStep(String pipelineId, PipelineSteps step, Status status, String userId) {
-        configAndControlService.updateStep(pipelineId, step.name(), status.name(), userId, null);
-    }
-
-    @Override
-    public void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics) {
-        configAndControlService.updateStep(pipelineId, step.name(), status.name(), userId, metrics);
+    public void updateStep(PipelineStepUpdate update) {
+        configAndControlService.updateStep(update);
     }
 }

@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.infrastructure.internal_services.impl;
 
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.infrastructure.adapters.dtos.PipelineStepRequest;
 import com.biopatternsg.infrastructure.clients.internal.ConfigAndControlHttpClient;
 import com.biopatternsg.infrastructure.internal_services.QueryConfigAndControl;
@@ -34,12 +35,13 @@ public class QueryConfigAndControlImpl implements QueryConfigAndControl {
     }
 
     @Override
-    public void updateStep(String pipelineId, String step, String status, String userId) {
-        updateStep(pipelineId, step, status, userId, null);
-    }
-
-    @Override
-    public void updateStep(String pipelineId, String step, String status, String userId, java.util.Map<String, String> metrics) {
-        configAndControlHttpClient.updateStep(new PipelineStepRequest(pipelineId, step, status, metrics), userId);
+    public void updateStep(PipelineStepUpdate update) {
+        configAndControlHttpClient.updateStep(
+                new PipelineStepRequest(
+                        update.pipelineId(),
+                        update.step().name(),
+                        update.status().name(),
+                        update.metrics()),
+                update.userId());
     }
 }

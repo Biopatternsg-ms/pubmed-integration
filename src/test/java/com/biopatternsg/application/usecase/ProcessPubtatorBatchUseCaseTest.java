@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.model.PubtatorSearchRequest;
@@ -71,7 +72,7 @@ class ProcessPubtatorBatchUseCaseTest {
         useCase.execute(request);
 
         verify(pubtatorResultRepository).saveAll(List.of(withEvents));
-        verify(configAndControlRepository, never()).updateStep(any(), any(), any(), any(), any());
+        verify(configAndControlRepository, never()).updateStep(any());
     }
 
     @Test
@@ -88,13 +89,13 @@ class ProcessPubtatorBatchUseCaseTest {
         useCase.execute(request);
 
         verify(pubtatorSearchRepoWeb, never()).search(any());
-        verify(configAndControlRepository).updateStep(
-                eq("pipe-1"),
-                eq(PipelineSteps.SEARCH_PUBTATOR),
-                eq(Status.COMPLETED),
-                eq("user-1"),
-                eq(Map.of("pmidsAnnotated", "2", "pmidsNotFound", "1"))
-        );
+        verify(configAndControlRepository).updateStep(PipelineStepUpdate.withMetrics(
+                "pipe-1",
+                PipelineSteps.SEARCH_PUBTATOR,
+                Status.COMPLETED,
+                "user-1",
+                Map.of("pmidsAnnotated", "2", "pmidsNotFound", "1")
+        ));
         verify(pubtatorSearchProgressRepository).deleteByPipelineId("pipe-1");
     }
 }

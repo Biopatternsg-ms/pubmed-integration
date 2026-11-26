@@ -17,16 +17,7 @@ package com.biopatternsg.domain.ports.out.external_repositories;
 
 import com.biopatternsg.domain.model.PubtatorResult;
 
-import java.util.List;
-
 public interface BuildKnowledgeBaseRepoWeb {
 
-    GenerateKbResult generateKnowledgeBase(
-            String pipelineId,
-            String pmid,
-            String title,
-            String text,
-            List<PubtatorResult.PubtatorObject> objects,
-            List<PubtatorResult.PubtatorEvent> events
-    );
+    GenerateKbResult generateKnowledgeBase(String pipelineId, PubtatorResult pubtatorResult);
 }

@@ -44,85 +44,6 @@ class KbEventRepositoryAdapterTest {
     private MongoCollection<KbEventCollection> mockCollection;
 
     @Test
-    void findByPipelineIdAndRestriction_veryRestricted_requiresBothEndpoints() {
-        KbEventRepositoryAdapter adapter = spy(new KbEventRepositoryAdapter());
-
-        KbEvent ev1 = new KbEvent("pipe-1", "TP53", "binds", "MDM2", List.of("1"));
-        KbEvent ev2 = new KbEvent("pipe-1", "TP53", "activates", "CDKN1A", List.of("2"));
-        KbEvent ev3 = new KbEvent("pipe-1", "EGFR", "phosphorylates", "AKT1", List.of("3"));
-
-        doReturn(List.of(ev1, ev2, ev3)).when(adapter).findByPipelineId("pipe-1");
-
-        List<KbEvent> result = adapter.findByPipelineIdAndRestriction(
-                "pipe-1",
-                "VERY_RESTRICTED",
-                List.of("tp53", "mdm2")
-        );
-
-        assertEquals(1, result.size());
-        assertEquals("TP53", result.get(0).first());
-        assertEquals("MDM2", result.get(0).second());
-    }
-
-    @Test
-    void findByPipelineIdAndRestriction_restricted_requiresAtLeastOneEndpoint() {
-        KbEventRepositoryAdapter adapter = spy(new KbEventRepositoryAdapter());
-
-        KbEvent ev1 = new KbEvent("pipe-1", "TP53", "binds", "MDM2", List.of("1"));
-        KbEvent ev2 = new KbEvent("pipe-1", "TP53", "activates", "CDKN1A", List.of("2"));
-        KbEvent ev3 = new KbEvent("pipe-1", "EGFR", "phosphorylates", "AKT1", List.of("3"));
-
-        doReturn(List.of(ev1, ev2, ev3)).when(adapter).findByPipelineId("pipe-1");
-
-        List<KbEvent> result = adapter.findByPipelineIdAndRestriction(
-                "pipe-1",
-                "RESTRICTED",
-                List.of("tp53")
-        );
-
-        assertEquals(2, result.size());
-        assertTrue(result.contains(ev1));
-        assertTrue(result.contains(ev2));
-        assertFalse(result.contains(ev3));
-    }
-
-    @Test
-    void findByPipelineIdAndRestriction_unrestricted_returnsAll() {
-        KbEventRepositoryAdapter adapter = spy(new KbEventRepositoryAdapter());
-
-        KbEvent ev1 = new KbEvent("pipe-1", "TP53", "binds", "MDM2", List.of("1"));
-        KbEvent ev2 = new KbEvent("pipe-1", "EGFR", "phosphorylates", "AKT1", List.of("2"));
-
-        doReturn(List.of(ev1, ev2)).when(adapter).findByPipelineId("pipe-1");
-
-        List<KbEvent> result = adapter.findByPipelineIdAndRestriction(
-                "pipe-1",
-                "UNRESTRICTED",
-                List.of("TP53")
-        );
-
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void findByPipelineIdAndRestriction_nullOrBlankPipelineId_returnsEmpty() {
-        KbEventRepositoryAdapter adapter = new KbEventRepositoryAdapter();
-
-        assertTrue(adapter.findByPipelineIdAndRestriction(null, "RESTRICTED", List.of("TP53")).isEmpty());
-        assertTrue(adapter.findByPipelineIdAndRestriction("  ", "RESTRICTED", List.of("TP53")).isEmpty());
-    }
-
-    @Test
-    void findByPipelineIdAndRestriction_emptyAlignedObjectsForRestricted_returnsEmpty() {
-        KbEventRepositoryAdapter adapter = spy(new KbEventRepositoryAdapter());
-        KbEvent ev1 = new KbEvent("pipe-1", "TP53", "binds", "MDM2", List.of("1"));
-        doReturn(List.of(ev1)).when(adapter).findByPipelineId("pipe-1");
-
-        assertTrue(adapter.findByPipelineIdAndRestriction("pipe-1", "VERY_RESTRICTED", List.of()).isEmpty());
-        assertTrue(adapter.findByPipelineIdAndRestriction("pipe-1", "RESTRICTED", null).isEmpty());
-    }
-
-    @Test
     @DisplayName("When upsert receives @PREFIJO_SUFIJO in first or second, it should save only the suffix")
     void upsert_withPrefixSuffixPattern_shouldExtractSuffixForFirstAndSecond() {
         KbEventRepositoryAdapter adapter = spy(new KbEventRepositoryAdapter());
@@ -138,7 +59,7 @@ class KbEventRepositoryAdapterTest {
         ArgumentCaptor<Bson> updateCaptor = ArgumentCaptor.forClass(Bson.class);
         ArgumentCaptor<UpdateOptions> optionsCaptor = ArgumentCaptor.forClass(UpdateOptions.class);
 
-        adapter.upsert(pipelineId, first, relation, second, pubmedIds);
+        adapter.upsert(new KbEvent(pipelineId, first, relation, second, pubmedIds));
 
         verify(mockCollection, times(1)).updateOne(
                 filterCaptor.capture(),
@@ -177,7 +98,7 @@ class KbEventRepositoryAdapterTest {
 
         ArgumentCaptor<Bson> filterCaptor = ArgumentCaptor.forClass(Bson.class);
 
-        adapter.upsert(pipelineId, first, relation, second, pubmedIds);
+        adapter.upsert(new KbEvent(pipelineId, first, relation, second, pubmedIds));
 
         verify(mockCollection, times(1)).updateOne(
                 filterCaptor.capture(),

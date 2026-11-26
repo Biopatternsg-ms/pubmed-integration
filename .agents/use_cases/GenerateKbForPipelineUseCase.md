@@ -13,15 +13,15 @@ To construct the biological Knowledge Base (KB) for a pipeline, annotated PubTat
     - `PubtatorResult findByPmid(String pmid)`
     - `void updateKnowledgeBase(String pmid, PubtatorResult.KnowledgeBase knowledgeBase)`
   - `com.biopatternsg.domain.ports.out.external_repositories.BuildKnowledgeBaseRepoWeb`
-    - `GenerateKbResult generateKnowledgeBase(String pipelineId, String pmid, String title, String text, List<PubtatorResult.PubtatorObject> objects, List<PubtatorResult.PubtatorEvent> events)`
+    - `GenerateKbResult generateKnowledgeBase(String pipelineId, PubtatorResult pubtatorResult)`
   - `com.biopatternsg.domain.ports.out.repositories.KbEventRepository`
-    - `void upsert(String pipelineId, String first, String relation, String second, List<String> pubmedIds)`
+    - `void upsert(KbEvent event)`
   - `com.biopatternsg.domain.ports.out.repositories.KbObjectRepository`
     - `void saveKbObjectItems(String pipelineId, List<PubtatorResult.KbObjectItem> objects)`
   - `com.biopatternsg.domain.ports.out.repositories.PubmedResultRepository`
     - `void deleteByPipelineId(String pipelineId)`
   - `com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository`
-    - `void updateStep(String pipelineId, PipelineSteps step, Status status, String userId, Map<String, String> metrics)`
+    - `void updateStep(PipelineStepUpdate update)`
 - **Application Services:** None.
 - **Delivery Adapter:** `PubmedController#generateKb` (`POST /pubmed/generate-kb`, executed asynchronously via `CompletableFuture.runAsync(...)` with `202 Accepted`; captures `userId` from `SessionUtils`).
 

@@ -41,36 +41,66 @@ class GetKbEventsByRestrictionUseCaseTest {
     }
 
     @Test
-    void execute_delegatesToRepositoryWithParameters() {
+    void execute_veryRestricted_requiresBothEndpoints() {
         String pipelineId = "pipe-123";
-        String restrictionLevel = "VERY_RESTRICTED";
-        List<String> alignedObjects = List.of("TP53", "MDM2");
-        KbEvent event = new KbEvent(pipelineId, "TP53", "binds", "MDM2", List.of("PMID:12345"));
+        KbEvent ev1 = new KbEvent(pipelineId, "TP53", "binds", "MDM2", List.of("1"));
+        KbEvent ev2 = new KbEvent(pipelineId, "TP53", "activates", "CDKN1A", List.of("2"));
+        KbEvent ev3 = new KbEvent(pipelineId, "EGFR", "phosphorylates", "AKT1", List.of("3"));
 
-        when(kbEventRepository.findByPipelineIdAndRestriction(pipelineId, restrictionLevel, alignedObjects))
-                .thenReturn(List.of(event));
+        when(kbEventRepository.findByPipelineId(pipelineId)).thenReturn(List.of(ev1, ev2, ev3));
 
-        List<KbEvent> result = useCase.execute(pipelineId, restrictionLevel, alignedObjects);
+        List<KbEvent> result = useCase.execute(pipelineId, "VERY_RESTRICTED", List.of("tp53", "mdm2"));
 
         assertEquals(1, result.size());
-        assertEquals("TP53", result.get(0).first());
-        assertEquals("MDM2", result.get(0).second());
-        verify(kbEventRepository).findByPipelineIdAndRestriction(pipelineId, restrictionLevel, alignedObjects);
+        assertEquals(ev1, result.get(0));
+        verify(kbEventRepository).findByPipelineId(pipelineId);
     }
 
     @Test
-    void execute_returnsEmptyListWhenPipelineIdIsNull() {
-        List<KbEvent> result = useCase.execute(null, "RESTRICTED", List.of("TP53"));
+    void execute_restricted_requiresAtLeastOneEndpoint() {
+        String pipelineId = "pipe-123";
+        KbEvent ev1 = new KbEvent(pipelineId, "TP53", "binds", "MDM2", List.of("1"));
+        KbEvent ev2 = new KbEvent(pipelineId, "TP53", "activates", "CDKN1A", List.of("2"));
+        KbEvent ev3 = new KbEvent(pipelineId, "EGFR", "phosphorylates", "AKT1", List.of("3"));
 
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(kbEventRepository);
+        when(kbEventRepository.findByPipelineId(pipelineId)).thenReturn(List.of(ev1, ev2, ev3));
+
+        List<KbEvent> result = useCase.execute(pipelineId, "RESTRICTED", List.of("tp53"));
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(ev1));
+        assertTrue(result.contains(ev2));
+        assertFalse(result.contains(ev3));
     }
 
     @Test
-    void execute_returnsEmptyListWhenPipelineIdIsBlank() {
-        List<KbEvent> result = useCase.execute("   ", "RESTRICTED", List.of("TP53"));
+    void execute_unrestrictedAndNoRestrictedAndBlank_returnsAllEvents() {
+        String pipelineId = "pipe-123";
+        KbEvent ev1 = new KbEvent(pipelineId, "TP53", "binds", "MDM2", List.of("1"));
+        KbEvent ev2 = new KbEvent(pipelineId, "EGFR", "phosphorylates", "AKT1", List.of("2"));
 
-        assertTrue(result.isEmpty());
+        when(kbEventRepository.findByPipelineId(pipelineId)).thenReturn(List.of(ev1, ev2));
+
+        assertEquals(2, useCase.execute(pipelineId, "UNRESTRICTED", List.of("TP53")).size());
+        assertEquals(2, useCase.execute(pipelineId, "NO_RESTRICTED", List.of("TP53")).size());
+        assertEquals(2, useCase.execute(pipelineId, null, List.of("TP53")).size());
+        assertEquals(2, useCase.execute(pipelineId, "  ", List.of("TP53")).size());
+    }
+
+    @Test
+    void execute_emptyAlignedObjectsForRestricted_returnsEmpty() {
+        String pipelineId = "pipe-123";
+        KbEvent ev1 = new KbEvent(pipelineId, "TP53", "binds", "MDM2", List.of("1"));
+        when(kbEventRepository.findByPipelineId(pipelineId)).thenReturn(List.of(ev1));
+
+        assertTrue(useCase.execute(pipelineId, "VERY_RESTRICTED", List.of()).isEmpty());
+        assertTrue(useCase.execute(pipelineId, "RESTRICTED", null).isEmpty());
+    }
+
+    @Test
+    void execute_returnsEmptyListWhenPipelineIdIsNullOrBlank() {
+        assertTrue(useCase.execute(null, "RESTRICTED", List.of("TP53")).isEmpty());
+        assertTrue(useCase.execute("   ", "RESTRICTED", List.of("TP53")).isEmpty());
         verifyNoInteractions(kbEventRepository);
     }
 }

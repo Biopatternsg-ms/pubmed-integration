@@ -16,6 +16,7 @@
 package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.domain.model.KbEvent;
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.Status;
@@ -103,14 +104,8 @@ class GenerateKbForPipelineUseCaseTest {
                 biotypesMap
         );
 
-        when(buildKnowledgeBaseRepoWeb.generateKnowledgeBase(
-                eq(PIPELINE_ID),
-                eq(PMID),
-                eq(mockPubtatorResult.title()),
-                eq(mockPubtatorResult.text()),
-                eq(mockPubtatorResult.objects()),
-                eq(mockPubtatorResult.events())
-        )).thenReturn(mockKbResult);
+        when(buildKnowledgeBaseRepoWeb.generateKnowledgeBase(PIPELINE_ID, mockPubtatorResult))
+                .thenReturn(mockKbResult);
 
         // Act
         useCase.execute(PIPELINE_ID, USER_ID);
@@ -122,16 +117,14 @@ class GenerateKbForPipelineUseCaseTest {
         );
 
         verify(pubtatorResultRepository, times(1)).updateKnowledgeBase(PMID, expectedKb);
-        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID));
+        verify(kbEventRepository, times(1)).upsert(new KbEvent(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID)));
         verify(kbObjectRepository, times(1)).saveKbObjectItems(PIPELINE_ID, expectedKb.objects());
         verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
-        verify(configAndControlRepository, times(1)).updateStep(
-                eq(PIPELINE_ID),
-                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
-                eq(Status.COMPLETED),
-                eq(USER_ID),
-                any()
-        );
+        verify(configAndControlRepository, times(1)).updateStep(argThat(update ->
+                update.pipelineId().equals(PIPELINE_ID)
+                        && update.step() == PipelineSteps.BUILD_KNOWLEDGE_BASE
+                        && update.status() == Status.COMPLETED
+                        && update.userId().equals(USER_ID)));
     }
 
     @Test
@@ -168,17 +161,15 @@ class GenerateKbForPipelineUseCaseTest {
         // Assert
         verifyNoInteractions(buildKnowledgeBaseRepoWeb);
         verify(pubtatorResultRepository, never()).updateKnowledgeBase(anyString(), any());
-        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID));
-        verify(kbEventRepository, times(1)).upsert(PIPELINE_ID, "TLR2", "positive_correlation", "IFNG", List.of(PMID));
+        verify(kbEventRepository, times(1)).upsert(new KbEvent(PIPELINE_ID, "IFNG", "positive_correlation", "TLR2", List.of(PMID)));
+        verify(kbEventRepository, times(1)).upsert(new KbEvent(PIPELINE_ID, "TLR2", "positive_correlation", "IFNG", List.of(PMID)));
         verify(kbObjectRepository, times(1)).saveKbObjectItems(PIPELINE_ID, cachedKb.objects());
         verify(pubmedResultRepository, times(1)).deleteByPipelineId(PIPELINE_ID);
-        verify(configAndControlRepository, times(1)).updateStep(
-                eq(PIPELINE_ID),
-                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
-                eq(Status.COMPLETED),
-                eq(USER_ID),
-                any()
-        );
+        verify(configAndControlRepository, times(1)).updateStep(argThat(update ->
+                update.pipelineId().equals(PIPELINE_ID)
+                        && update.step() == PipelineSteps.BUILD_KNOWLEDGE_BASE
+                        && update.status() == Status.COMPLETED
+                        && update.userId().equals(USER_ID)));
     }
 
     @Test
@@ -194,12 +185,7 @@ class GenerateKbForPipelineUseCaseTest {
         // Assert
         verifyNoInteractions(pubtatorResultRepository, buildKnowledgeBaseRepoWeb, kbObjectRepository, pubmedResultRepository);
         verify(configAndControlRepository, times(1)).updateStep(
-                eq(PIPELINE_ID),
-                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
-                eq(Status.COMPLETED),
-                eq(USER_ID),
-                any()
-        );
+                PipelineStepUpdate.of(PIPELINE_ID, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.COMPLETED, USER_ID));
     }
 
     @Test
@@ -214,11 +200,6 @@ class GenerateKbForPipelineUseCaseTest {
 
         // Assert
         verify(configAndControlRepository, times(1)).updateStep(
-                eq(PIPELINE_ID),
-                eq(PipelineSteps.BUILD_KNOWLEDGE_BASE),
-                eq(Status.FAILED),
-                eq(USER_ID),
-                any()
-        );
+                PipelineStepUpdate.of(PIPELINE_ID, PipelineSteps.BUILD_KNOWLEDGE_BASE, Status.FAILED, USER_ID));
     }
 }

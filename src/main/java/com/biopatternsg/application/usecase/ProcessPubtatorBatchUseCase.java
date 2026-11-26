@@ -15,6 +15,7 @@
  */
 package com.biopatternsg.application.usecase;
 
+import com.biopatternsg.domain.model.PipelineStepUpdate;
 import com.biopatternsg.domain.model.PipelineSteps;
 import com.biopatternsg.domain.model.PubtatorResult;
 import com.biopatternsg.domain.model.PubtatorSearchRequest;
@@ -114,13 +115,13 @@ public class ProcessPubtatorBatchUseCase implements ProcessPubtatorBatch {
                 "pmidsNotFound", String.valueOf(notFoundPmids)
         );
 
-        configAndControlRepository.updateStep(
+        configAndControlRepository.updateStep(PipelineStepUpdate.withMetrics(
                 request.pipelineId(),
                 PipelineSteps.SEARCH_PUBTATOR,
                 Status.COMPLETED,
                 request.userId(),
                 metrics
-        );
+        ));
         pubtatorSearchProgressRepository.deleteByPipelineId(request.pipelineId());
     }
 }
