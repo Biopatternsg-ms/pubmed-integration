@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.mongo;
+package com.biopatternsg.domain.exception;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntity;
-import io.quarkus.mongodb.panache.common.MongoEntity;
-import lombok.Getter;
-import lombok.Setter;
+public class AlignmentException extends RuntimeException {
 
-@Setter
-@Getter
-@MongoEntity(collection = "pubmed_results")
-public class PubmedResultCollection extends PanacheMongoEntity {
-    private String pipelineId;
-    private String pubmedId;
+    public AlignmentException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public AlignmentException(Throwable cause) {
+        super(cause);
+    }
 }

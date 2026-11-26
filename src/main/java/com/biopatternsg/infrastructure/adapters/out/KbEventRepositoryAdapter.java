@@ -18,7 +18,7 @@ package com.biopatternsg.infrastructure.adapters.out;
 import com.biopatternsg.domain.model.KbEvent;
 import com.biopatternsg.domain.ports.out.repositories.KbEventRepository;
 import com.biopatternsg.domain.util.LogSanitizer;
-import com.biopatternsg.mongo.KbEventCollection;
+import com.biopatternsg.infrastructure.mongo.KbEventCollection;
 import com.cifertech.exceptionhandler.exceptions._5xx.InternalServerError;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;

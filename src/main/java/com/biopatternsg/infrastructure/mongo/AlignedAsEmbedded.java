@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.mongo;
+package com.biopatternsg.infrastructure.mongo;
 
-import io.quarkus.mongodb.panache.PanacheMongoEntity;
-import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.util.List;
 
-@Setter
 @Getter
-@MongoEntity(collection = "alignedResults")
-public class AlignedResultCollection extends PanacheMongoEntity {
-    private String pipelineId;
-    private List<String> aligned;
-    private List<String> noAligned;
-    private List<AlignedAsEmbedded> alignedAs;
-    private List<String> alignedAndAlternatives;
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class AlignedAsEmbedded {
+    private String expertObjectName;
+    private List<String> alternativeIds;
 }

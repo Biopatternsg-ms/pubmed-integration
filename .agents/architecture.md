@@ -68,7 +68,7 @@
 |                                                ^                                                  |
 |                                                |                                                  |
 |   [Outbound Adapters (Persistence, Messaging, Internal & External Services)]                      |
-|   - MongoDB Panache (com.biopatternsg.mongo.*): Pair, PubmedResult, SearchProgress,               |
+|   - MongoDB Panache (com.biopatternsg.infrastructure.mongo.*): Pair, PubmedResult, SearchProgress,               |
 |     PubtatorPmidReader, PubtatorResult, PubtatorSearchProgress, KbEvent, KbObject, AlignedResult  |
 |   - RabbitMQ Producers: NcbiQueueSenderRabbitAdapter (@Channel("ncbi-out")),                      |
 |                         PubtatorQueueSenderRabbitAdapter (@Channel("pubtator-out"))               |
@@ -182,7 +182,7 @@ Ubicación: `com.biopatternsg.application.usecase.*` (Catálogo e índice genera
 ### 6.1. Persistencia (MongoDB Panache)
 - **Motor:** MongoDB (base de datos por defecto: `pubmed-integration`).
 - **Acceso a Datos:** Quarkus MongoDB con Panache (`PanacheMongoRepository` / `PanacheMongoEntity`).
-- **Colecciones Principales (`com.biopatternsg.mongo.*`):**
+- **Colecciones Principales (`com.biopatternsg.infrastructure.mongo.*`):**
     - `PairsCollection` (`pairs`): Almacena los pares de términos (`firstTerm`, `secondTerm`) generados por `pipelineId`. Se elimina al completar la búsqueda en PubMed.
     - `PubmedResultCollection` (`pubmed_results`): Almacena los `pubmedId` recuperados de NCBI ESearch por `pipelineId`. Se elimina al completar la generación de la KB.
     - `SearchProgressCollection` (`search_progress`): Rastrea `completedCount`, `totalCount` y `userId` para la fase `SEARCH_PUBMED_IDS`.

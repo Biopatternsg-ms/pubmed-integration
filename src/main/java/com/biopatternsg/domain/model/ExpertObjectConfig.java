@@ -15,9 +15,6 @@
  */
 package com.biopatternsg.domain.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record ExpertObjectConfig(
         String uniprotId,
         String hgncId,

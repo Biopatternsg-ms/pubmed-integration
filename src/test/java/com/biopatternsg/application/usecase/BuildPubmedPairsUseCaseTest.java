@@ -17,9 +17,9 @@ package com.biopatternsg.application.usecase;
 
 import com.biopatternsg.application.services.BiologicalObjectsService;
 import com.biopatternsg.domain.model.BiologicalObject;
+import com.biopatternsg.domain.model.PipelinePairsBatch;
 import com.biopatternsg.domain.ports.out.external_repositories.ConfigAndControlRepository;
 import com.biopatternsg.domain.ports.out.repositories.PairRepository;
-import com.biopatternsg.mongo.PairsCollection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -52,12 +52,12 @@ class BuildPubmedPairsUseCaseTest {
     private BuildPubmedPairsUseCase useCase;
 
     private Set<String> captureAllSavedPairs() {
-        ArgumentCaptor<PairsCollection> captor = ArgumentCaptor.forClass(PairsCollection.class);
+        ArgumentCaptor<PipelinePairsBatch> captor = ArgumentCaptor.forClass(PipelinePairsBatch.class);
         verify(pairRepository, atLeastOnce()).save(captor.capture());
 
         return captor.getAllValues().stream()
-                .flatMap(pc -> pc.getPairs().stream())
-                .map(p -> normalized(p.getFirstTerm(), p.getSecondTerm()))
+                .flatMap(batch -> batch.pairs().stream())
+                .map(p -> normalized(p.firstTerm(), p.secondTerm()))
                 .collect(Collectors.toSet());
     }
 
@@ -129,11 +129,11 @@ class BuildPubmedPairsUseCaseTest {
 
             useCase.execute(PIPELINE_ID, true, 1, USER_ID);
 
-            ArgumentCaptor<PairsCollection> captor = ArgumentCaptor.forClass(PairsCollection.class);
+            ArgumentCaptor<PipelinePairsBatch> captor = ArgumentCaptor.forClass(PipelinePairsBatch.class);
             verify(pairRepository, atLeastOnce()).save(captor.capture());
 
             long totalPairs = captor.getAllValues().stream()
-                    .mapToLong(pc -> pc.getPairs().size())
+                    .mapToLong(batch -> batch.pairs().size())
                     .sum();
             assertThat(totalPairs).isZero();
         }
@@ -146,11 +146,11 @@ class BuildPubmedPairsUseCaseTest {
 
             useCase.execute(PIPELINE_ID, true, 1, USER_ID);
 
-            ArgumentCaptor<PairsCollection> captor = ArgumentCaptor.forClass(PairsCollection.class);
+            ArgumentCaptor<PipelinePairsBatch> captor = ArgumentCaptor.forClass(PipelinePairsBatch.class);
             verify(pairRepository, atLeastOnce()).save(captor.capture());
 
             long totalPairs = captor.getAllValues().stream()
-                    .mapToLong(pc -> pc.getPairs().size())
+                    .mapToLong(batch -> batch.pairs().size())
                     .sum();
             assertThat(totalPairs).isZero();
         }
@@ -211,11 +211,11 @@ class BuildPubmedPairsUseCaseTest {
 
             useCase.execute(PIPELINE_ID, true, 1, USER_ID);
 
-            ArgumentCaptor<PairsCollection> captor = ArgumentCaptor.forClass(PairsCollection.class);
+            ArgumentCaptor<PipelinePairsBatch> captor = ArgumentCaptor.forClass(PipelinePairsBatch.class);
             verify(pairRepository, atLeastOnce()).save(captor.capture());
 
             long totalPairs = captor.getAllValues().stream()
-                    .mapToLong(pc -> pc.getPairs().size())
+                    .mapToLong(batch -> batch.pairs().size())
                     .sum();
             assertThat(totalPairs).isZero();
         }
@@ -335,11 +335,11 @@ class BuildPubmedPairsUseCaseTest {
 
             useCase.execute(PIPELINE_ID, true, 2, USER_ID);
 
-            ArgumentCaptor<PairsCollection> captor = ArgumentCaptor.forClass(PairsCollection.class);
+            ArgumentCaptor<PipelinePairsBatch> captor = ArgumentCaptor.forClass(PipelinePairsBatch.class);
             verify(pairRepository, atLeastOnce()).save(captor.capture());
 
             long totalPairs = captor.getAllValues().stream()
-                    .mapToLong(pc -> pc.getPairs().size())
+                    .mapToLong(batch -> batch.pairs().size())
                     .sum();
             assertThat(totalPairs).isZero();
         }

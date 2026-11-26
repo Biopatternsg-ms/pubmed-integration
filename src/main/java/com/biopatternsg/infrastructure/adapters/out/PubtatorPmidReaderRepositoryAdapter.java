@@ -16,7 +16,7 @@
 package com.biopatternsg.infrastructure.adapters.out;
 
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
-import com.biopatternsg.mongo.PubmedResultCollection;
+import com.biopatternsg.infrastructure.mongo.PubmedResultCollection;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

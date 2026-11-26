@@ -30,8 +30,10 @@ import com.biopatternsg.domain.ports.in.UpdateKbObjectRoles;
 import com.biopatternsg.domain.ports.in.ResetKbObjectRoles;
 import com.biopatternsg.domain.ports.in.GetAlignedResults;
 import com.biopatternsg.domain.ports.in.GetPublicationsByPmids;
+import com.biopatternsg.domain.model.ExpertObjectConfig;
 import com.biopatternsg.infrastructure.adapters.dtos.BuildPairsRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GenerateAlignedObjectsRequest;
+import com.biopatternsg.infrastructure.mapper.ExpertObjectConfigMapper;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPairsByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.SearchPubtatorByPipelineRequest;
 import com.biopatternsg.infrastructure.adapters.dtos.GetPublicationsByPmidsRequest;
@@ -173,9 +175,10 @@ public class PubmedController {
     ) {
 
         String userId = sessionUtils.getUserId();
+        List<ExpertObjectConfig> expertObjects = ExpertObjectConfigMapper.requestListToModel(request.expertObjects());
         CompletableFuture.runAsync(() -> {
             try {
-                generateAlignedObjects.execute(request.pipelineId(), request.expertObjects(), userId);
+                generateAlignedObjects.execute(request.pipelineId(), expertObjects, userId);
             } catch (Exception e) {
                 log.error("Error generating aligned objects", e);
             }

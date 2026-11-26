@@ -24,7 +24,7 @@ import com.biopatternsg.domain.ports.out.external_repositories.PubtatorSearchRep
 import com.biopatternsg.domain.ports.out.repositories.PubtatorPmidReaderRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorResultRepository;
 import com.biopatternsg.domain.ports.out.repositories.PubtatorSearchProgressRepository;
-import com.biopatternsg.mongo.PubtatorSearchProgressCollection;
+import com.biopatternsg.domain.model.SearchProgress;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -89,12 +89,12 @@ public class PubtatorRabbitConsumer {
     }
 
     private void reportBatchProgress(PubtatorSearchRequest request) {
-        PubtatorSearchProgressCollection progress =
+        SearchProgress progress =
                 pubtatorSearchProgressRepository.incrementAndGet(request.pipelineId());
 
-        if (progress != null && progress.getCompletedCount() == progress.getTotalCount()) {
+        if (progress != null && progress.isCompleted()) {
             log.info("All PubTator batches completed for pipelineId=[{}] ([{}] batches)",
-                    request.pipelineId(), progress.getTotalCount());
+                    request.pipelineId(), progress.totalCount());
 
             List<String> rawPmids = pubtatorPmidReaderRepository.findPubmedIdsByPipelineId(request.pipelineId());
             int totalPmids = rawPmids != null ? rawPmids.size() : 0;

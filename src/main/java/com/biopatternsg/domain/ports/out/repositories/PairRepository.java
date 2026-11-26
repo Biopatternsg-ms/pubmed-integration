@@ -15,12 +15,12 @@
  */
 package com.biopatternsg.domain.ports.out.repositories;
 
-import com.biopatternsg.mongo.PairsCollection;
+import com.biopatternsg.domain.model.PipelinePairsBatch;
 
 import java.util.List;
 
 public interface PairRepository {
-    void save(PairsCollection pairsCollection);
+    void save(PipelinePairsBatch batch);
     void deleteByPipelineId(String pipelineId);
-    List<PairsCollection> findByPipelineId(String pipelineId);
+    List<PipelinePairsBatch> findByPipelineId(String pipelineId);
 }

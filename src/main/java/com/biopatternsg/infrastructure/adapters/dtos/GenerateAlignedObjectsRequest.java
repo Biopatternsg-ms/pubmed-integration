@@ -15,7 +15,6 @@
  */
 package com.biopatternsg.infrastructure.adapters.dtos;
 
-import com.biopatternsg.domain.model.ExpertObjectConfig;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -23,6 +22,6 @@ import java.util.List;
 
 public record GenerateAlignedObjectsRequest(
         @NotBlank String pipelineId,
-        @NotNull List<ExpertObjectConfig> expertObjects
+        @NotNull List<ExpertObjectConfigDto> expertObjects
 ) {
 }

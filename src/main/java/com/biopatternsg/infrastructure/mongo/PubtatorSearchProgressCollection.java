@@ -13,31 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.biopatternsg.mongo;
+package com.biopatternsg.infrastructure.mongo;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
-/**
- * Entidad MongoDB para los eventos de la base de conocimiento.
- * Cada documento representa una relación biológica única (pipelineId + first + relation + second)
- * respaldada por los PubMed IDs que la evidencian.
- *
- * <p>La colección usa un índice único compuesto sobre {pipelineId, first, relation, second}
- * para garantizar que no existan eventos duplicados.
- */
 @Setter
 @Getter
-@MongoEntity(collection = "kb_events")
-public class KbEventCollection extends PanacheMongoEntity {
-
+@MongoEntity(collection = "pubtator_search_progress")
+public class PubtatorSearchProgressCollection extends PanacheMongoEntity {
     private String pipelineId;
-    private String first;
-    private String relation;
-    private String second;
-    private List<String> pubmedIds;
+    private int completedCount;
+    private int totalCount;
+    private String userId;
 }
